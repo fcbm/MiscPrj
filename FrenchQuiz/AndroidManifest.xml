@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.fcbm.frenchquiz"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="8"
+        android:targetSdkVersion="19" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name="com.fcbm.frenchquiz.MainActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.fcbm.frenchquiz.GlossaryActivity" 
+            />
+        <activity
+            android:name="com.fcbm.frenchquiz.WordDetailsActivity" 
+            />
+        <activity
+            android:name="com.fcbm.frenchquiz.QuizActivityTest" 
+            />
+        <activity
+            android:name="com.fcbm.frenchquiz.QuizActivity" 
+            />        
+        <provider
+            android:name="com.fcbm.frenchquiz.LanguagesProvider"
+            android:authorities="com.fcbm.frenchquiz"
+            android:exported="false"
+            />
+    </application>
+
+</manifest>
