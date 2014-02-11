@@ -17,7 +17,6 @@ import android.widget.TextView;
 
 public class WordDetailsFragment extends Fragment {
 
-	private static final String TAG = "WordDetailsFragment";
 	public static final String ARG_WORD = "arg_word";
 	public static final String ARG_ORG_LANG = "arg_org_lang";
 	public static final String ARG_DST_LANG = "arg_dst_lang";

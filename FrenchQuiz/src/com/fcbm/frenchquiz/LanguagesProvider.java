@@ -35,6 +35,8 @@ public class LanguagesProvider extends ContentProvider {
 	public static final String GLOSSARY_COL_GRAMMATICAL_NOTE = "grammaticalnote";
 	
 	public static final String TRANS_COL_ID = "_id";
+	// TODO: fix this
+	public static final String TRANS_COL_ID_CLIENT = "idtrans";
 	public static final String TRANS_COL_T1 = "t1";
 	public static final String TRANS_COL_T2 = "t2";
 	public static final String TRANS_COL_DIFFICULTY = "difficulty";
@@ -383,15 +385,21 @@ public class LanguagesProvider extends ContentProvider {
 		}
 		else if (getTable( uri) == RANDOM_TABLE)
 		{
+			// TODO : handle randomness in code
 			Log.i(TAG, "Query on random table");
 			String selectTranslation =
-				"SELECT " +
-					GLOSSARY_COL_ID + ", " + 
+				"SELECT * FROM (SELECT * FROM (SELECT " +
+					GLOSSARY_TABLE + "." + GLOSSARY_COL_ID + ", " + 
+					TRANS_COL_ID_CLIENT + ", " +
+					TRANS_COL_NUMBER_OF_ATTEMTS + ", " +
+					TRANS_COL_NUMBER_OF_SUCCESS + ", " +
 					"origword, " + 
 					GLOSSARY_COL_WORD + 
 				" FROM " + 
 					GLOSSARY_TABLE + ", (" + 
 					"SELECT " + 
+						TRANS_COL_NUMBER_OF_ATTEMTS + ", " +
+						TRANS_COL_NUMBER_OF_SUCCESS + ", " +
 						GLOSSARY_COL_WORD + " AS origword, " + 
 						"(CASE WHEN " + GLOSSARY_TABLE+"."+ GLOSSARY_COL_ID+"=" + TRANS_COL_T1 + " THEN " + TRANS_COL_T2 + " ELSE " + TRANS_COL_T1 + " END) AS idtrans " + 
 					"FROM " + 
@@ -401,12 +409,13 @@ public class LanguagesProvider extends ContentProvider {
 					//	GLOSSARY_COL_WORD + "='" + selectionArgs[0]+"' AND " + 
 						GLOSSARY_COL_LANG + "='" + selectionArgs[0] + "' AND " +
 						"(" + GLOSSARY_TABLE+"."+ GLOSSARY_COL_ID+" = " + TRANS_COL_T1 + " or " + GLOSSARY_TABLE+"."+ GLOSSARY_COL_ID+" = " + TRANS_COL_T2 + ")" +
-						" ORDER BY RANDOM() LIMIT 1)"+ 
+						" ORDER BY RANDOM())"+ 
 				" WHERE " +
 						GLOSSARY_COL_LANG + "='"+ selectionArgs[2]+"' AND " + 
-						"idtrans=" + GLOSSARY_TABLE+"."+ GLOSSARY_COL_ID+ " " +
-						" GROUP BY " + GLOSSARY_COL_WORD + 
-						" ORDER BY RANDOM() LIMIT " + selectionArgs[1] + ";" ;
+						"idtrans=" + GLOSSARY_TABLE+"."+ GLOSSARY_COL_ID +
+						 
+						" ORDER BY RANDOM() LIMIT " + selectionArgs[1] + 
+						") GROUP BY origword ) GROUP BY " +GLOSSARY_COL_WORD + ";" ;
 		
 			newCursor = db.rawQuery(selectTranslation, null);
 			Log.d(TAG, "NewCursor is null : " + (newCursor != null && newCursor.getCount() > 0));
@@ -437,9 +446,9 @@ public class LanguagesProvider extends ContentProvider {
 		{
 			selection = "1";
 		}
-		
-		int updatedRows = db.update( getTable(uri), values, selection, selectionArgs);
-		
+		String table = getTable(uri);
+		int updatedRows = db.update( table, values, selection, selectionArgs);
+		Log.d(TAG, "Update on " + table + " res: " + updatedRows );
 		if (updatedRows > 0)
 		{
 			getContext().getContentResolver().notifyChange(uri, null);

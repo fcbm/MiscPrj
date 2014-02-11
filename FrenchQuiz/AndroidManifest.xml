@@ -34,6 +34,9 @@
         <activity
             android:name="com.fcbm.frenchquiz.QuizActivity" 
             />        
+        <activity
+            android:name="com.fcbm.frenchquiz.SummaryActivity" 
+            />  
         <provider
             android:name="com.fcbm.frenchquiz.LanguagesProvider"
             android:authorities="com.fcbm.frenchquiz"

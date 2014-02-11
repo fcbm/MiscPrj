@@ -21,7 +21,7 @@ public class AddNewTermFragment extends Fragment {
 	{
 		super.onCreateView(inflater, container, savedInstanceState);
 		View v = inflater.inflate( R.layout.fragment_add_new_term, null);
-		
+
 		return v;
 	}
 	

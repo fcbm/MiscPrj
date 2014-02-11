@@ -22,10 +22,10 @@ public class TermsCreatorUtil {
 		List<ContentValues> cvGlossary = new ArrayList<ContentValues>();
 
 		cvGlossary.add( buildContentValue("femme", "moglie,donna", "fr", "it") );
-		/*cvGlossary.add( buildContentValue("bonjour", "buongiorno", "fr", "it") );
-		cvGlossary.add( buildContentValue("bonsoire", "buonasera", "fr", "it") );*/
+		cvGlossary.add( buildContentValue("bonjour", "buongiorno", "fr", "it") );
+		cvGlossary.add( buildContentValue("bonsoire", "buonasera", "fr", "it") );
 		cvGlossary.add( buildContentValue("beaucoup", "molto", "fr", "it") );
-		/*cvGlossary.add( buildContentValue("tot", "presto", "fr", "it") );
+		cvGlossary.add( buildContentValue("tot", "presto", "fr", "it") );
 		cvGlossary.add( buildContentValue("salut", "ciao", "fr", "it") );
 
 		cvGlossary.add( buildContentValue("toit", "tetto", "fr", "it") );
@@ -41,12 +41,12 @@ public class TermsCreatorUtil {
 		cvGlossary.add( buildContentValue("tranquille", "tranquillo", "fr", "it") );
 		cvGlossary.add( buildContentValue("tranquillement", "tranqulllamente", "fr", "it") );
 		cvGlossary.add( buildContentValue("travail", "lavoro", "fr", "it") );
-		cvGlossary.add( buildContentValue("travailler", "lavorare", "fr", "it") );*/
+		cvGlossary.add( buildContentValue("travailler", "lavorare", "fr", "it") );
 
 		
 		cvGlossary.add( buildContentValue("treize", "tredici", "fr", "it") );
 		cvGlossary.add( buildContentValue("très", "molto", "fr", "it") );
-		/*cvGlossary.add( buildContentValue("trois", "tre", "fr", "it") );
+		cvGlossary.add( buildContentValue("trois", "tre", "fr", "it") );
 		cvGlossary.add( buildContentValue("tromper (se -)" , "sbagliarsi", "fr", "it") );
 		cvGlossary.add( buildContentValue("tronc", "tronco", "fr", "it") );
 		cvGlossary.add( buildContentValue("trop", "troppo", "fr", "it") );
@@ -70,9 +70,8 @@ public class TermsCreatorUtil {
 		cvGlossary.add( buildContentValue("salut", "hello", "fr", "en") );
 		cvGlossary.add( buildContentValue("donna", "woman", "it", "en") );
 		cvGlossary.add( buildContentValue("moglie", "wife", "it", "en") );
-		cvGlossary.add( buildContentValue("ciao", "hello", "it", "en") );*/
+		cvGlossary.add( buildContentValue("ciao", "hello", "it", "en") );
 
-		
 		return cvGlossary;
 	}
 }

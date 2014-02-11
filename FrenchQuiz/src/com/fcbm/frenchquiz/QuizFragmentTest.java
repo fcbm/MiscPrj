@@ -37,7 +37,7 @@ public class QuizFragmentTest extends ListFragment {
 
 		@Override
 		public Loader<Cursor> onCreateLoader(int loaderId, Bundle loaderArgs) {
-			String[] selectionArgs = new String[] { "fr", "50", "it" };
+			String[] selectionArgs = new String[] { "fr", "3", "it" };
 			mCursorLoader = new CursorLoader( 
 					getActivity(), 
 					LanguagesProvider.authorityRandomWord, 
