@@ -1,9 +1,13 @@
 package com.fcbm.test.multifeedreader;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Date;
 
+import com.fcbm.test.multifeedreader.bom.PageInfo;
+import com.fcbm.test.multifeedreader.provider.NewsContract;
+import com.fcbm.test.multifeedreader.provider.NewsProvider;
+
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.AsyncQueryHandler;
 import android.database.Cursor;
@@ -25,7 +29,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -42,10 +45,9 @@ public class FeedListFragment extends ListFragment {
 	//private ArrayList<FeedItem> mItems;
 	//private ItemListAdapter mAdapter;
 	private int mNewFeeds  = 0;
+	private PageInfo mPageInfo;
 	private Handler mUpdateUiHandler;
 	private GenericDownloader<ImageView> mBmpDownloader;
-	private String mUrl;
-	private int mIconId;
 	private ListItemClickListener mClickItemListener;
 	private AsyncQueryHandler mQueryHandler;
 	
@@ -54,13 +56,13 @@ public class FeedListFragment extends ListFragment {
 		public void onListItemClicked(Bundle b);
 	}
 	
-	private class FeedDownloader extends AsyncTask<String, Void, Integer>
+	private class FeedDownloader extends AsyncTask<PageInfo, Void, Integer>
 	{
 		@Override
-		protected Integer doInBackground(String... args) {
-			String url = args[0] ;
-			if (url.startsWith("http://"))
-				return FeedFetch.downloadFeedItems( getActivity(), url );
+		protected Integer doInBackground(PageInfo... args) {
+			PageInfo pi = args[0] ;
+			if (pi.getUrl().startsWith("http://") || pi.getUrl().startsWith("https://"))
+				return FeedFetch.downloadFeedItems( getActivity(), pi);
 			else
 				return FeedFetch.downloadFeedItems( getActivity() );
 		}
@@ -78,42 +80,37 @@ public class FeedListFragment extends ListFragment {
 	};
 	
 	
-	public static FeedListFragment newInstance(String title, String description, String url, int iconId)
+	public static FeedListFragment newInstance(Bundle args)
 	{
 		FeedListFragment f = new FeedListFragment();
-		Bundle b = new Bundle();
-		
-		b.putString(FeedListActivity.KEY_TITLE, title);
-		b.putString(FeedListActivity.KEY_DESCRIPTION, description);
-		b.putString(FeedListActivity.KEY_URL, url);
-		b.putInt(FeedListActivity.KEY_ICON, iconId);
-		
-		f.setArguments(b);
-		
+		f.setArguments(args);
 		return f;
 	}
 	
 	private SimpleCursorAdapter mCursorAdapter = null;
 	private String[] mProjection = new String[] {
-			NewsProvider.NEWS_COL_ID, 
-			NewsProvider.NEWS_COL_TITLE, 
-			NewsProvider.NEWS_COL_CATEGORY, 
-			NewsProvider.NEWS_COL_DATE,
-			NewsProvider.NEWS_COL_LINK,
-			NewsProvider.NEWS_COL_DESCRIPTION,
-			NewsProvider.NEWS_COL_IMGLINK};
+			NewsContract.COL_ID, 
+			NewsContract.COL_TITLE, 
+			NewsContract.COL_CATEGORY, 
+			NewsContract.COL_DATE,
+			NewsContract.COL_LINK,
+			NewsContract.COL_DESCRIPTION,
+			NewsContract.COL_IMGLINK};
 	
 	private final LoaderCallbacks<Cursor> mLoaderCallback = new LoaderCallbacks<Cursor>() {
 		@Override
 		public Loader<Cursor> onCreateLoader(int loaderId, Bundle args) {
 			
-			String selection = loaderId == LOAD_SINGLE_URL ? NewsProvider.NEWS_COL_SITE + " = ?" : null;
-			String[] selectionArgs = loaderId == LOAD_SINGLE_URL ?  new String[] { mUrl  } : null;
-			String sortOrder = NewsProvider.NEWS_COL_DATE + " DESC";
+			//String selection = loaderId == LOAD_SINGLE_URL ? NewsContract.COL_SITE + " = ?" : null;
+			//String[] selectionArgs = loaderId == LOAD_SINGLE_URL ?  new String[] { mPageInfo.getUrl()  } : null;
+			String selection = NewsContract.COL_SITE + " = '" + mPageInfo.getUrl() + "'" ;
+			String[] selectionArgs = null; //LOAD_SINGLE_URL ?  new String[] {   } : null;
+
+			String sortOrder = NewsContract.COL_DATE + " DESC";
 			
 			CursorLoader loader = new CursorLoader( 
 					getActivity().getApplicationContext(), 
-					NewsProvider.authority, 
+					NewsProvider.authorityNews, 
 					mProjection, 
 					selection, 
 					selectionArgs,
@@ -145,15 +142,14 @@ public class FeedListFragment extends ListFragment {
 	}
 	
 	@Override
+	@SuppressLint("HandlerLeak")
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		
 		setHasOptionsMenu(true);
-		//String title = savedInstanceState.getString(FeedListActivity.KEY_TITLE);
-		//String description = savedInstanceState.getString(FeedListActivity.KEY_DESCRIPTION);
-		mUrl = getArguments().getString(FeedListActivity.KEY_URL);
-		mIconId = getArguments().getInt(FeedListActivity.KEY_ICON);
+
+		mPageInfo = getArguments().getParcelable( FeedListActivity.KEY_PAGE_INFO );
 		
 		mUpdateUiHandler = new Handler()
 		{
@@ -188,14 +184,14 @@ public class FeedListFragment extends ListFragment {
 		int loaderId = 0;
 		Bundle loaderArgs = null;
 		
-		if (mUrl.startsWith("http://"))
+		if (mPageInfo.getUrl().startsWith("http://"))
 			loaderId = LOAD_SINGLE_URL;
 		else
 			loaderId = LOAD_ALL_URLS;
 		
 		getLoaderManager().initLoader(loaderId, loaderArgs, mLoaderCallback);
 		
-		new FeedDownloader().execute(mUrl);
+		new FeedDownloader().execute(mPageInfo);
 	}
 
 	@Override
@@ -218,8 +214,8 @@ public class FeedListFragment extends ListFragment {
 		Cursor c = (Cursor)l.getAdapter().getItem(position);
 
 		Bundle b = new Bundle();
-		String link = c.getString( c.getColumnIndex( NewsProvider.NEWS_COL_LINK ));
-		String description = c.getString( c.getColumnIndex( NewsProvider.NEWS_COL_DESCRIPTION ));
+		String link = c.getString( c.getColumnIndex( NewsContract.COL_LINK ));
+		String description = c.getString( c.getColumnIndex( NewsContract.COL_DESCRIPTION ));
 		if (link != null)
 		{
 			b.putString(KEY_URL, link);
@@ -299,14 +295,14 @@ public class FeedListFragment extends ListFragment {
 			{
 				Log.d(TAG, "Cursor at " + position);
 				
-				title = c.getString( c.getColumnIndex( NewsProvider.NEWS_COL_TITLE) );
+				title = c.getString( c.getColumnIndex( NewsContract.COL_TITLE) );
 				Log.d(TAG, "Cursor at " + position + " gotTitle");
-				category = c.getString( c.getColumnIndex( NewsProvider.NEWS_COL_CATEGORY) );
+				category = c.getString( c.getColumnIndex( NewsContract.COL_CATEGORY) );
 				Log.d(TAG, "Cursor at " + position + " gotCategory");
 			
-				time = c.getLong( c.getColumnIndex( NewsProvider.NEWS_COL_DATE) );
+				time = c.getLong( c.getColumnIndex( NewsContract.COL_DATE) );
 				
-				imageLink = c.getString( c.getColumnIndex( NewsProvider.NEWS_COL_IMGLINK) );
+				imageLink = c.getString( c.getColumnIndex( NewsContract.COL_IMGLINK) );
 				
 			}
 			else
@@ -363,76 +359,6 @@ public class FeedListFragment extends ListFragment {
 		}
 	}
 	
-	private class ItemListAdapter extends ArrayAdapter<FeedItem>
-	{
-		public ItemListAdapter(ArrayList<FeedItem> items) {
-			super(getActivity(), 0, items);
-		}
-		
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent)
-		{
-			if (convertView == null)
-			{
-				convertView = getActivity().getLayoutInflater().inflate(R.layout.item_row, null);
-			}
-			
-			FeedItem fi = (FeedItem) getItem(position);
-			
-			if (fi.getTitle() != null)
-			{ 
-				TextView tv = (TextView) convertView.findViewById( R.id.tvItemTitle );
-				tv.setText(fi.getTitle());
-			}/*
-			if (fi.getAuthor() != null)
-			{ 
-				TextView tv = (TextView) convertView.findViewById( R.id.tvItemAuthor);
-				tv.setText(fi.getAuthor());
-			}*/			
-			if (fi.getCategory() != null)
-			{ 
-				TextView tv = (TextView) convertView.findViewById( R.id.tvItemCategory);
-				tv.setText(fi.getCategory());
-			}
-			if (fi.getDate() != null)
-			{
-				Date d = new Date();
-				
-				int diffInDays = (int)( (d.getTime() - Date.parse( fi.getDate() )) / (1000 * 60 * 60 * 24) );
-				int diffInHours = (int)( (d.getTime() - Date.parse( fi.getDate() )) / (1000 * 60 * 60) );	
-				int diffInMins = (int)( (d.getTime() - Date.parse( fi.getDate() )) / (1000 * 60) );
-				
-				TextView tv = (TextView) convertView.findViewById( R.id.tvItemDate);
-				if (diffInDays != 0)
-				{
-					tv.setText("" + diffInDays + " days ago");
-				}
-				else if (diffInHours != 0) 
-				{
-					tv.setText("" + diffInHours + " hours ago");
-				}
-				else if (diffInMins != 0)
-				{
-					tv.setText("" + diffInMins + " minutes ago");
-				}
-				else
-				{
-					tv.setText("Just Wrote!" );
-				}
-			}
-			ImageView iv = (ImageView)convertView.findViewById( R.id.ivItemImage );
-			iv.setImageBitmap( null );
-			
-			if ( fi.getImageLink() != null )
-			{
-				//iv.setImageBitmap( fi.getImage() );
-				mBmpDownloader.queueDownloadBitmap( iv, fi.getImageLink());
-			}
-
-			return convertView;
-		}
-	}
-	
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater)
 	{
@@ -447,11 +373,11 @@ public class FeedListFragment extends ListFragment {
 		{
 		case R.id.clearItems:
 			Object cookie = null;
-			String where = NewsProvider.NEWS_COL_SITE + "=\'" + mUrl + "\'";
-			mQueryHandler.startDelete(NO_OPERATION, cookie, NewsProvider.authority, where, null);
+			String where = NewsContract.COL_SITE + "=\'" + mPageInfo.getUrl() + "\'";
+			mQueryHandler.startDelete(NO_OPERATION, cookie, NewsProvider.authorityNews, where, null);
 			return true;
 		case R.id.loadItems:
-			new FeedDownloader().execute(mUrl);
+			new FeedDownloader().execute(mPageInfo);
 			return true;
 		case R.id.startUpdate:
 			FeedUpdateService.startPeriodicUpdate( getActivity(), getArguments() );

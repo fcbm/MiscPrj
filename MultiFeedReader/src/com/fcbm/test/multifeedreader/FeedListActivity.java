@@ -1,22 +1,18 @@
 package com.fcbm.test.multifeedreader;
 
+import com.fcbm.test.multifeedreader.bom.PageInfo;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.util.Log;
-import android.view.View;
 
 public class FeedListActivity extends SingleFragmentActivity implements FeedListFragment.ListItemClickListener {
 
-	private static final String TAG = "FeedListActivity";
+	//private static final String TAG = "FeedListActivity";
 	
-	public static final String KEY_URL = "key_url";
-	public static final String KEY_TITLE = "key_title";
-	public static final String KEY_DESCRIPTION = "key_description";
-	public static final String KEY_COLOR = "key_color";
-	public static final String KEY_ICON = "key_icon";
+	public static final String KEY_PAGE_INFO = "key_page_info";
 	
 	@Override
 	protected int getLayoutResId()
@@ -28,13 +24,7 @@ public class FeedListActivity extends SingleFragmentActivity implements FeedList
 	protected Fragment createFragment() {
 		
 		Intent i = getIntent();
-		
-		String title = i.getStringExtra(KEY_TITLE);
-		String description = i.getStringExtra(KEY_DESCRIPTION);
-		int iconId = i.getIntExtra(KEY_ICON, R.drawable.ic_launcher);
-		String url = i.getStringExtra(KEY_URL);
-		
-		return FeedListFragment.newInstance(title, description, url, iconId);
+		return FeedListFragment.newInstance(i.getExtras());
 	}
 	
 	/*
@@ -64,8 +54,8 @@ public class FeedListActivity extends SingleFragmentActivity implements FeedList
 		super.onCreate(savedInstanceState);
 
 		Intent i = getIntent();
-		
-		String title = i.getStringExtra(KEY_TITLE);
+		PageInfo pi = i.getExtras().getParcelable( KEY_PAGE_INFO);
+		String title = pi.getTitle();
 		
 		setTitle(title);
 	}

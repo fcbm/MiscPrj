@@ -1,5 +1,7 @@
 package com.fcbm.test.multifeedreader;
 
+import com.fcbm.test.multifeedreader.bom.PageInfo;
+
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
@@ -7,6 +9,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.widget.Toast;
@@ -24,34 +27,34 @@ public class FeedUpdateService extends IntentService {
 	@Override
 	protected void onHandleIntent(Intent inputIntent) {
 		
-		String url = inputIntent.getStringExtra( FeedListActivity.KEY_URL );
+		PageInfo pageInfo = inputIntent.getExtras().getParcelable( FeedListActivity.KEY_PAGE_INFO );
 		
-		int iconId = inputIntent.getIntExtra(FeedListActivity.KEY_ICON , R.drawable.ic_launcher );
+		Bitmap favicon = pageInfo.getFavicon( this );
 		
 		//Toast.makeText( this, TAG + " startDownload " + url, Toast.LENGTH_LONG).show();
 		
-		int newFeeds =  FeedFetch.downloadFeedItems( this, url);
+		int newFeeds =  FeedFetch.downloadFeedItems( this, pageInfo );
 		
 		
 		//Toast.makeText( this, TAG + " endDownload " + newFeeds, Toast.LENGTH_LONG).show();
 		
-		//if (newFeeds > 0)
+		if (newFeeds > 0)
 		{
 			Intent  i = new Intent(this, FeedListActivity.class);
 			i.putExtras( inputIntent.getExtras() );
 			PendingIntent pi = PendingIntent.getActivity( this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
 			Notification n = new NotificationCompat.Builder( this )
 				.setTicker("")
-				.setSmallIcon(iconId)
+				.setSmallIcon( R.drawable.ic_launcher )
+				.setLargeIcon( favicon )
 				.setContentTitle( "Feed Update : " + newFeeds)
-				.setContentText( "url:  " + url )
+				.setContentText( "url:  " + pageInfo.getUrl() )
 				.setContentIntent( pi )
 				.setVibrate( new long[] {300, 100, 300, 100, 300, 100, 800, 200, 800, 200, 300, 100, 300, 100, 300, 100})
 				.build();
 			
 			NotificationManager nm = (NotificationManager)getSystemService( Context.NOTIFICATION_SERVICE );
 			nm.notify( 0 , n);
-
 		}
 
 	}

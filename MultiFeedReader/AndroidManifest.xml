@@ -34,7 +34,7 @@
             android:name="com.fcbm.test.multifeedreader.PageActivity"
             />
         <provider
-            android:name="com.fcbm.test.multifeedreader.NewsProvider"
+            android:name="com.fcbm.test.multifeedreader.provider.NewsProvider"
             android:authorities="com.fcbm.test.multifeedreader"
             android:exported="false"
             />

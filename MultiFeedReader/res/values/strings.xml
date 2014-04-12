@@ -9,5 +9,8 @@
     <string name="load_items">Load Items</string>
     <string name="start_update">Start update</string>
     <string name="stop_update">Stop update</string>
+    <string name="load_pages">Load Pages</string>
+    <string name="clear_pages">Clear Pages</string>
+    <string name="reset_pages">Reset Pages</string>
 
 </resources>

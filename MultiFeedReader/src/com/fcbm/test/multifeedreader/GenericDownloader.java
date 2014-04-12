@@ -8,6 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fcbm.test.multifeedreader.bom.FeedItem;
+import com.fcbm.test.multifeedreader.provider.NewsContract;
+import com.fcbm.test.multifeedreader.provider.NewsProvider;
+
+import android.annotation.SuppressLint;
 import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
@@ -47,6 +52,7 @@ public class GenericDownloader<Token> extends HandlerThread {
 	}
 	
 	@Override
+	@SuppressLint("HandlerLeak")
 	protected void onLooperPrepared()
 	{
 		super.onLooperPrepared();
@@ -60,13 +66,15 @@ public class GenericDownloader<Token> extends HandlerThread {
 				{
 					String url = mQueue.get( msg.obj );
 					
-					if (url == null) return;
+					if (url == null) 
+						return;
 					
 					String fname = downloadBitmapFromCr(url);
 					
 					mQueue.remove( msg.obj );
 					
-					if (fname == null) return;
+					if (fname == null) 
+						return;
 					
 					Message responseMsg = mResponseHandler.obtainMessage(DOWNLOADED_BITMAP, msg.obj);
 					Bundle data = new Bundle();
@@ -83,6 +91,7 @@ public class GenericDownloader<Token> extends HandlerThread {
 		mQueue.clear();
 	}
 	
+	/*
 	private String downloadBitmap(String url)
 	{
 		byte[] buffer = null;
@@ -123,7 +132,7 @@ public class GenericDownloader<Token> extends HandlerThread {
 		}
 		
 		return retStr;
-	}
+	}*/
 
 	private String downloadBitmapFromCr(String url)
 	{
@@ -134,16 +143,16 @@ public class GenericDownloader<Token> extends HandlerThread {
 		
 		try {
 			
-			String[] projection = new String[] {NewsProvider.NEWS_COL_ID, NewsProvider.NEWS_COL_DATA};
-			String selection = NewsProvider.NEWS_COL_IMGLINK + "=\'" + url + "\'";
-			Cursor c = mApplicationContext.getContentResolver().query(NewsProvider.authority, projection, selection, null, null);
+			String[] projection = new String[] {NewsContract.COL_ID, NewsContract.COL_DATA};
+			String selection = NewsContract.COL_IMGLINK + "=\'" + url + "\'";
+			Cursor c = mApplicationContext.getContentResolver().query(NewsProvider.authorityNews, projection, selection, null, null);
 			
 			String fname = null;
 			int rowId = -1;
 			if (c != null && c.getCount() > 0)
 			{
 				c.moveToFirst();
-				rowId = c.getInt( c.getColumnIndex( NewsProvider.NEWS_COL_ID));
+				rowId = c.getInt( c.getColumnIndex( NewsContract.COL_ID));
 				if( rowId > -1)
 					fname = ""+rowId;
 				//rowId = c.getInt( c.getColumnIndex( NewsProvider.NEWS_COL_ID ));
@@ -169,7 +178,7 @@ public class GenericDownloader<Token> extends HandlerThread {
 			
 			if (buffer == null) return null;
 			
-			fd = mApplicationContext.getContentResolver().openFileDescriptor(ContentUris.withAppendedId(NewsProvider.authority, rowId) , "w");
+			fd = mApplicationContext.getContentResolver().openFileDescriptor(ContentUris.withAppendedId(NewsProvider.authorityNews, rowId) , "w");
 			outFile = new FileOutputStream(fd.getFileDescriptor());
 			outFile.write( buffer, 0, buffer.length);
 			

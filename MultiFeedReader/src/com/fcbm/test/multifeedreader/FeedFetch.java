@@ -1,12 +1,12 @@
 package com.fcbm.test.multifeedreader;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,18 +14,23 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import com.fcbm.test.multifeedreader.bom.FeedItem;
+import com.fcbm.test.multifeedreader.bom.PageInfo;
+import com.fcbm.test.multifeedreader.provider.NewsContract;
+import com.fcbm.test.multifeedreader.provider.NewsProvider;
+import com.fcbm.test.multifeedreader.provider.PagesContract;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
-import android.widget.Toast;
 
 
 public class FeedFetch {
 
 	private static final String TAG = "FeedFetch";
-	
+	private static final String STR_FAVICON = "/favicon.ico";
 	private static final String XML_ITEM = "item";
 	
 	private static String getUrlAsString(String urlSpec) throws IOException
@@ -35,58 +40,98 @@ public class FeedFetch {
 	
 	public static int downloadFeedItems(Context ctx)
 	{
-		Cursor c = ctx.getContentResolver().query( NewsProvider.authorityPages, new String[] { "DISTINCT " + NewsProvider.PAGES_COL_LINK}, null, null, null);
 		int retVal = 0;
-		c.moveToFirst();
-		Log.d(TAG+"s", "Count " + c.getCount());
-		while (!c.isAfterLast())
+		
+		Cursor c = ctx.getContentResolver().query( NewsProvider.authorityPages, null, null, null, null);
+		
+		if (c == null)
+			return retVal;
+		
+		Log.d(TAG, "Count " + c.getCount());
+		
+		for (c.moveToFirst(); !c.isAfterLast() ; c.moveToNext())
 		{
-			String url = c.getString( c.getColumnIndex( NewsProvider.PAGES_COL_LINK));
-			String title = "";//c.getString( c.getColumnIndex( NewsProvider.NEWS_COL_TITLE));
-			Log.d(TAG+"s", "Url " + url + " title " + title);
-			retVal += downloadFeedItems( ctx , url);
-			c.moveToNext();
+			PageInfo pi = new PageInfo( c );
+			String url = pi.getUrl();
+			String title = pi.getTitle(); 
+			if (url.startsWith("http://") || url.startsWith("https://"))
+			{
+				Log.d(TAG, "Url " + url + " title " + title);
+				retVal += downloadFeedItems( ctx , pi);
+			}
 		}
+		
 		c.close();
 		return retVal;
 	}
-	public static int downloadFeedItems(Context ctx, String url)
+	
+	public static int downloadFeedItems(Context ctx, PageInfo pageInfo)
 	{
-		ArrayList<FeedItem> items = new ArrayList<FeedItem>();
 		int retVal = 0;
+		
 		try
 		{
-			String urlStr = Uri.parse(url).buildUpon().build().toString();
+			String urlStr = Uri.parse(pageInfo.getUrl()).buildUpon().build().toString();
 			
 			Log.i(TAG, "URL STR input -" + urlStr + "-");
 			String xmlString = getUrlAsString(urlStr);
+			
+			if (xmlString == null)
+				return retVal;
+			
+			Log.i(TAG, "XML String = " + xmlString);
 			
 			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 			XmlPullParser parser = factory.newPullParser();
 			
 			parser.setInput( new StringReader( xmlString) );
 			
-			parseItems(items, parser);
+			parseItems(pageInfo, parser);
 			
-			ContentValues[] values = new ContentValues[items.size()];
-			for (int i = 0; i < items.size(); i++)
+			ContentValues[] values = new ContentValues[pageInfo.getItems().size()];
+			ContentValues pageValues = null;
+			for (int i = 0; i < values.length; i++)
 			{
 				ContentValues cv = new ContentValues();
+				FeedItem item = pageInfo.getItems().get(i);
 				
-				cv.put(NewsProvider.NEWS_COL_TITLE, items.get(i).getTitle());
-				cv.put(NewsProvider.NEWS_COL_SITE, url);
-				cv.put(NewsProvider.NEWS_COL_DATE, items.get(i).getLongDate());
-				cv.put(NewsProvider.NEWS_COL_LINK, items.get(i).getLink());
-				cv.put(NewsProvider.NEWS_COL_IMGLINK, items.get(i).getImageLink());
-				cv.put(NewsProvider.NEWS_COL_CATEGORY, items.get(i).getCategory());
-				cv.put(NewsProvider.NEWS_COL_AUTHOR, items.get(i).getAuthor());
-				cv.put(NewsProvider.NEWS_COL_DESCRIPTION, items.get(i).getDescription());
+				if (pageValues == null && pageInfo.getFaviconUrl() != null )//&& pageInfo.getFileIcon() == null)
+				{
+					pageValues = new ContentValues();
+					pageValues.put( PagesContract.COL_IMGLINK, pageInfo.getFaviconUrl());
+					pageValues.put( PagesContract.COL_DESCRIPTION, pageInfo.getDescription());
+				}
+				
+				cv.put(NewsContract.COL_TITLE, item.getTitle());
+				cv.put(NewsContract.COL_SITE, pageInfo.getUrl());
+				cv.put(NewsContract.COL_DATE, item.getLongDate());
+				cv.put(NewsContract.COL_LINK, item.getLink());
+				cv.put(NewsContract.COL_IMGLINK, item.getImageLink());
+				cv.put(NewsContract.COL_CATEGORY, item.getCategory());
+				cv.put(NewsContract.COL_AUTHOR, item.getAuthor());
+				cv.put(NewsContract.COL_DESCRIPTION, item.getDescription());
 				values[i] = cv;
 			}
 			
-			retVal = ctx.getContentResolver().bulkInsert(NewsProvider.authority, values);
+			retVal = ctx.getContentResolver().bulkInsert(NewsProvider.authorityNews, values);
+			int pagesUpdated = 0;
+			if (pageValues != null)
+			{
+				Log.i(TAG, "PageUrl " + pageInfo.getUrl());
+				String fname = pageInfo.getFaviconFileName( ctx );
+				Log.i(TAG, "PageFaviconUrl " + pageInfo.getFaviconUrl() + " stripped " + fname);
+				Log.i(TAG, "PageDescription " + pageInfo.getDescription());
+				byte[] faviconBytes = getUrlAsBytes( pageInfo.getFaviconUrl() );
+				Log.i(TAG, "bytes " + faviconBytes.length);
+				FileOutputStream fos = new FileOutputStream( fname);
+				fos.write(faviconBytes);
+				fos.close();
+				String where = PagesContract.COL_LINK+ "=\'" + pageInfo.getUrl()+"\'";
+				Log.i(TAG, "where " + where);
+				pagesUpdated = ctx.getContentResolver().update( NewsProvider.authorityPages, pageValues, where, null);
+			}
 			
-			Log.i(TAG, "items size : " + items.size());
+			Log.i(TAG, "items size : " + pageInfo.getItems().size() + " pagesUpdated " + pagesUpdated);
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to fetch items" , e );
 			retVal = -1;
@@ -98,18 +143,34 @@ public class FeedFetch {
 		return retVal;
 	}
 	
-	private static void parseItems(ArrayList<FeedItem> items, XmlPullParser parser) throws XmlPullParserException, IOException
+	private static void parseItems(PageInfo pageInfo, XmlPullParser parser) throws XmlPullParserException, IOException
 	{
-		
-		int eventType = parser.next();
+		boolean insideChannel = false;
 		boolean insideItem = false;
-
 		FeedItem item = null;
-		while (eventType != XmlPullParser.END_DOCUMENT)
+		
+		for (int eventType = parser.next(); eventType != XmlPullParser.END_DOCUMENT ; eventType = parser.next())
 		{
 			if (eventType == XmlPullParser.START_TAG)
 			{
-				if (XML_ITEM.equals( parser.getName() ))
+				if (!insideItem  && !insideChannel && parser.getName().equalsIgnoreCase("channel") )
+				{
+					insideChannel = true;
+				}
+				else if (insideChannel && !insideItem  && parser.getName().equalsIgnoreCase("description"))
+				{
+					String feedDescription = parser.nextText();
+					Log.d(TAG+"d", "FeedDescription: " + feedDescription);
+					pageInfo.setDescription( feedDescription );
+				}
+				else if (insideChannel && !insideItem && parser.getName().equalsIgnoreCase("link"))
+				{
+					String feedBaseLink = parser.nextText();
+					Log.d(TAG+"d", "FeedBaseLink: " + feedBaseLink);
+					pageInfo.setFaviconUrl( feedBaseLink + STR_FAVICON );
+				}
+				
+				else if (XML_ITEM.equals( parser.getName() ))
 				{
 					insideItem = true;
 					item = new FeedItem();
@@ -138,7 +199,7 @@ public class FeedFetch {
 						byte[] data = getUrlAsBytes(matcher.group(3));
 						if (data != null)
 						{
-							Log.d(TAG+"s", item.getTitle() + " : " + matcher.group(3) + " data size:" + data.length);
+							Log.d(TAG, item.getTitle() + " : " + matcher.group(3) + " data size:" + data.length);
 							Bitmap bmp = BitmapFactory.decodeByteArray(data , 0, data.length);
 							item.setImage(bmp);
 						}
@@ -156,7 +217,7 @@ public class FeedFetch {
 				{
 					String thumb = parser.nextText();
 					item.setThumb(thumb);
-					Log.d(TAG+"t", "Got thumb: " + thumb);
+					Log.d(TAG, "Got thumb: " + thumb);
 				}				
 				else if (parser.getName().equalsIgnoreCase("author") && insideItem == true)
 				{
@@ -174,9 +235,8 @@ public class FeedFetch {
 				insideItem = false;
 				
 				if (item.getTitle() != null && item.getTitle().length() > 0)
-					items.add(item);
+					pageInfo.getItems().add(item);
 			}
-			eventType = parser.next();
 		}
 	}	
 	
@@ -186,16 +246,15 @@ public class FeedFetch {
 		
 		Log.d(TAG, "connecting to " + url.toString());
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        /*
+        
 		connection.setDoInput(true);
         connection.setDoOutput(false);
         connection.setRequestProperty("User-agent", "Mozilla AppleWebKit Chrome Safari"); // some feeds need this to work properly
         connection.setConnectTimeout(30000);
         connection.setReadTimeout(30000);
-        connection.setUseCaches(false);*/
-
-
-        //connection.setRequestProperty("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        connection.setUseCaches(false);
+        connection.setRequestProperty("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        
         connection.connect();
 		
 		Log.d(TAG, "connected!");
