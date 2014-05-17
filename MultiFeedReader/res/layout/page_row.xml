@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:layout_margin="5dp"
+    android:padding="5dp"
     android:background="@drawable/item_rounded_corners"
     >
 
@@ -19,12 +19,12 @@
 	<TextView 
         android:id="@+id/favicon"
         android:layout_gravity="center"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
         android:layout_margin="2dp"
         android:textSize="25sp"
         android:textStyle="bold"
-
+        android:paddingBottom="5dp"
         android:gravity="center"
         android:contentDescription="@string/icon"
         
@@ -35,6 +35,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginLeft="3dp"
         android:orientation="vertical" >
 
         <TextView

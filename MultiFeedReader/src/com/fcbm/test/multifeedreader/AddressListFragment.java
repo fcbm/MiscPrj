@@ -95,6 +95,7 @@ public class AddressListFragment extends ListFragment {
 		View v = super.onCreateView(inflater, parent, savedInstanceState);
 		ListView lv = (ListView)v.findViewById( android.R.id.list );
 		lv.setPadding(5, 5, 5, 5);
+		
 		lv.setBackgroundColor(  Color.parseColor("#D4D4D2"));
 		lv.setDivider( new ColorDrawable(Color.TRANSPARENT) );
 		lv.setDividerHeight( 5 );

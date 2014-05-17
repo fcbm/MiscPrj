@@ -13,6 +13,8 @@ import android.content.AsyncQueryHandler;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -198,6 +200,12 @@ public class FeedListFragment extends ListFragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
 	{
 		View v = super.onCreateView(inflater, parent, savedInstanceState);
+		ListView lv = (ListView)v.findViewById( android.R.id.list );
+		lv.setPadding(5, 5, 5, 5);
+		
+		lv.setBackgroundColor(  Color.parseColor("#D4D4D2"));
+		lv.setDivider( new ColorDrawable(Color.TRANSPARENT) );
+		lv.setDividerHeight( 5 );
 		
 		mCursorAdapter = new ItemCursorAdapter();
 		setListAdapter(mCursorAdapter);
