@@ -1,14 +1,14 @@
 package com.fcbm.test.multifeedreader;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import com.fcbm.test.multifeedreader.bom.PageInfo;
 import com.fcbm.test.multifeedreader.provider.NewsProvider;
 import com.fcbm.test.multifeedreader.provider.PagesContract;
 import com.fcbm.test.multifeedreader.provider.PagesJoinNewsContract;
+import com.fcbm.test.multifeedreader.utils.NewsProviderUtils;
+
 import android.content.AsyncQueryHandler;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -52,26 +52,18 @@ public class AddressListFragment extends ListFragment {
 	private LoaderCallbacks<Cursor> mCallbacks = new LoaderCallbacks<Cursor>() {
 
 		@Override
-		public Loader<Cursor> onCreateLoader(int requestId, Bundle requestArgs) {
-
-			// TODO: fix this using ProjectionMap and SQLiteQueryBuilder
+		public Loader<Cursor> onCreateLoader(int requestId, Bundle requestArgs) 
+		{
 			String selection = null;
 			String[] selectionArgs = null;
 			String sortOrder = null;
 
-			// Retrieve cnt of feeds for each Page (no special cases)
-			// select pagestable.title, count(newstable.link) from pagestable left join newstable on (pagestable.link=newstable.site) group by pagestable.link;
-			
-			// Retrieve cnt for special cases
-			// (select pagestable.title, cnt from (select count(newstable.link) as cnt from newstable), pagestable where pagestable.title='All Feeds');
-			
 			return new CursorLoader( getActivity(), NewsProvider.authorityPagesAndCountedNews, mProjection, selection, selectionArgs, sortOrder);
 		}
 
 		@Override
 		public void onLoadFinished(Loader<Cursor> loader, Cursor c) {
-			//if (mAdapter != null && c != null)
-				mAdapter.swapCursor( c );
+			mAdapter.swapCursor( c );
 		}
 
 		@Override
@@ -85,21 +77,24 @@ public class AddressListFragment extends ListFragment {
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		Log.d(TAG, "onCreat" );
+		Log.d(TAG, "onCreate" );
 		setHasOptionsMenu(true);
 	}
 	
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
 	{
+		Log.d(TAG, "onCreateView" );
+		
 		View v = super.onCreateView(inflater, parent, savedInstanceState);
+		
 		ListView lv = (ListView)v.findViewById( android.R.id.list );
 		lv.setPadding(5, 5, 5, 5);
-		
+		// TODO : define resource
 		lv.setBackgroundColor(  Color.parseColor("#D4D4D2"));
 		lv.setDivider( new ColorDrawable(Color.TRANSPARENT) );
 		lv.setDividerHeight( 5 );
-		Log.d(TAG, "onCreateView" );
+		
 		return v;
 	}
 	
@@ -123,6 +118,7 @@ public class AddressListFragment extends ListFragment {
 	{
 		super.onResume();
 		Log.d(TAG, "onResume" );
+		
 		int requestId = 0;
 		Bundle requestArgs = null;
 
@@ -190,18 +186,8 @@ public class AddressListFragment extends ListFragment {
 	private class PageInfoCursorAdapter extends SimpleCursorAdapter
 	{
 		private final String[] colors = new String[] 
-				{
-			"#33B5E5",
-			"#AA66CC",
-			"#99CC00",
-			"#FFBB33",
-			"#FF4444",
-			"#0099CC",
-			"#9933CC",
-			"#669900",
-			"#FF8800",
-			"#CC0000",
-				};
+				{ "#33B5E5", "#AA66CC", "#99CC00", "#FFBB33", "#FF4444",
+				  "#0099CC", "#9933CC", "#669900", "#FF8800", "#CC0000" };
 		
 		public PageInfoCursorAdapter()
 		{
@@ -220,7 +206,9 @@ public class AddressListFragment extends ListFragment {
 			
 			Cursor c = (Cursor) getItem(position);
 			Log.d(TAG, "cursor cnt " + c.getCount());
+			
 			PageInfo pi = new PageInfo( c );
+			
 			int index = c.getColumnIndex( PagesJoinNewsContract.COL_COUNT_CNT );
 			int size = c.getInt( index );
 			Log.d(TAG, "index " + index + " size " + size);
@@ -228,79 +216,26 @@ public class AddressListFragment extends ListFragment {
 			TextView tvTitle = (TextView) convertView.findViewById( R.id.title );
 			TextView tvDescription = (TextView) convertView.findViewById( R.id.description );
 			TextView tvNumberOfItems = (TextView) convertView.findViewById( R.id.numberOfItems );
-			TextView ivFavicon = (TextView) convertView.findViewById( R.id.favicon );
+			TextView tvFavicon = (TextView) convertView.findViewById( R.id.favicon );
 
 			tvTitle.setText( pi.getTitle() );
-			tvDescription.setText( pi.getDescription() + " " + index );
-			String spaces = ""; 
-			if ( size < 100 )
-			{ spaces = " "; }
-			else if ( size < 10 )
-			{ spaces = " "; }
-			tvNumberOfItems.setText( spaces + size + spaces);
+			tvDescription.setText( pi.getDescription() );
+			tvNumberOfItems.setText( String.valueOf(size) );
+
+			int colorIndex = position % colors.length ;
+			tvFavicon.setBackgroundColor( Color.parseColor(colors[colorIndex]) );
+			tvFavicon.setText( ""+tvTitle.getText().charAt(0) );
+			
 			//ivFavicon.setImageBitmap( pi.getFavicon( getActivity() ) );
 			// see http://stackoverflow.com/questions/18660672/setting-background-of-imagview-in-relativelayout
 
-			int colorIndex = position % colors.length ;
-			ivFavicon.setBackgroundColor( Color.parseColor(colors[colorIndex]) );
-		
-			ivFavicon.setText( ""+tvTitle.getText().charAt(0) );
-			
 			//ivFavicon.setImageDrawable( 
 				//	new BitmapDrawable( getActivity().getResources(), pi.getFavicon( getActivity() ) ));
 			
 			return convertView;
 		}
 	}
-/*	
-	private class PageInfoAdapter extends ArrayAdapter<PageInfo>
-	{
 
-		public PageInfoAdapter(ArrayList<PageInfo> pages) {
-			super(getActivity(), 0,  pages);
-		}
-		
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent)
-		{
-			View v = convertView;
-			
-			if (v == null)
-			{
-				v = getActivity().getLayoutInflater().inflate(R.layout.page_row, null);
-			}
-			
-			PageInfo pi = getItem(position);
-			
-			TextView title = (TextView)v.findViewById( R.id.title );
-			title.setText( pi.getTitle() );
-			TextView description = (TextView)v.findViewById( R.id.description );
-			description.setText( pi.getDescription() );
-			
-			ImageView iv = (ImageView) v.findViewById( R.id.favicon );
-			//File fileIcon = pi.getFileIcon();
-			File fileIcon = new File( getContext().getFilesDir() + "/" + pi.getUrl().replaceAll("[:/]", "") );
-			
-			//if (fileIcon == null || !fileIcon.exists())
-			if (!fileIcon.exists())
-			{
-				Log.d(TAG, fileIcon + " not exist");
-				//iv.setImageResource( pi.getIcon() );
-			}
-			else
-			{
-				Log.d(TAG, fileIcon + " exists");
-				Bitmap bmpIcon = BitmapFactory.decodeFile( fileIcon.getPath() );
-				iv.setImageBitmap( bmpIcon );
-			}
-			
-			//View border = v.findViewById( R.id.border );
-			//border.setBackgroundColor( pi.getColor() );
-			
-			return v;
-		}
-	}
-*/	
 	private void loadPages()
 	{
 		ArrayList<PageInfo> mPages = new ArrayList<PageInfo>();
@@ -328,7 +263,7 @@ public class AddressListFragment extends ListFragment {
 		mPages.add( new PageInfo("XKCD", "Comics", "http://xkcd.com/rss.xml"));
 		mPages.add( new PageInfo("Spinoza.it", "Comics", "http://feeds.feedburner.com/Spinoza"));
 
-		pushToDb(mPages);
+		NewsProviderUtils.storePageInfo(getActivity(), mPages);
 	}
 	
 	private void clearPages()
@@ -345,22 +280,4 @@ public class AddressListFragment extends ListFragment {
 		clearPages();
 		loadPages();
 	}
-	
-	private void pushToDb(List<PageInfo> items)
-	{
-		ContentValues[] listOfValues = new ContentValues[items.size()];
-		for(int i = 0; i < items.size(); i++)
-		{
-			PageInfo info = items.get(i);
-			ContentValues cv = new ContentValues();
-			cv.put(PagesContract.COL_LINK, info.getUrl());
-			cv.put(PagesContract.COL_TITLE, info.getTitle());
-			cv.put(PagesContract.COL_DESCRIPTION, info.getDescription());
-			Log.d(TAG, "inserting Items " + info.getUrl());
-			listOfValues[i] = cv ;
-		}
-		int inserted = getActivity().getContentResolver().bulkInsert( NewsProvider.authorityPagesAndCountedNews, listOfValues);
-		Log.d(TAG, "inserted Items " + inserted);
-	}	
-	
 }

@@ -1,6 +1,7 @@
 package com.fcbm.test.multifeedreader;
 
 import com.fcbm.test.multifeedreader.bom.PageInfo;
+import com.fcbm.test.multifeedreader.utils.FeedFetch;
 
 import android.app.AlarmManager;
 import android.app.IntentService;

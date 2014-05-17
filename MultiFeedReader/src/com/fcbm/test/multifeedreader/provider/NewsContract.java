@@ -3,6 +3,13 @@ package com.fcbm.test.multifeedreader.provider;
 import java.util.HashMap;
 import java.util.Map;
 
+//Retrieve cnt of feeds for each Page (no special cases)
+//select pagestable.title, count(newstable.link) from pagestable left join newstable on (pagestable.link=newstable.site) group by pagestable.link;
+
+//Retrieve cnt for special cases
+//(select pagestable.title, cnt from (select count(newstable.link) as cnt from newstable), pagestable where pagestable.title='All Feeds');
+
+
 public final class NewsContract extends BaseContract {
 
 	public static final String TABLE = "newstable";

@@ -1,12 +1,8 @@
-package com.fcbm.test.multifeedreader;
+package com.fcbm.test.multifeedreader.utils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,17 +10,14 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
-import com.fcbm.test.multifeedreader.bom.FeedItem;
-import com.fcbm.test.multifeedreader.bom.PageInfo;
-import com.fcbm.test.multifeedreader.provider.NewsContract;
-import com.fcbm.test.multifeedreader.provider.NewsProvider;
-import com.fcbm.test.multifeedreader.provider.PagesContract;
-
-import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
+
+import com.fcbm.test.multifeedreader.bom.FeedItem;
+import com.fcbm.test.multifeedreader.bom.PageInfo;
+import com.fcbm.test.multifeedreader.provider.NewsProvider;
 
 
 public class FeedFetch {
@@ -33,10 +26,6 @@ public class FeedFetch {
 	private static final String STR_FAVICON = "/favicon.ico";
 	private static final String XML_ITEM = "item";
 	
-	private static String getUrlAsString(String urlSpec) throws IOException
-	{
-		return new String(getUrlAsBytes(urlSpec));
-	}
 	
 	public static int downloadFeedItems(Context ctx)
 	{
@@ -74,7 +63,7 @@ public class FeedFetch {
 			String urlStr = Uri.parse(pageInfo.getUrl()).buildUpon().build().toString();
 			
 			Log.i(TAG, "URL STR input -" + urlStr + "-");
-			String xmlString = getUrlAsString(urlStr);
+			String xmlString = HttpDownloader.getUrlAsString(urlStr);
 			
 			if (xmlString == null)
 				return retVal;
@@ -88,50 +77,14 @@ public class FeedFetch {
 			
 			parseItems(pageInfo, parser);
 			
-			ContentValues[] values = new ContentValues[pageInfo.getItems().size()];
-			ContentValues pageValues = null;
-			for (int i = 0; i < values.length; i++)
-			{
-				ContentValues cv = new ContentValues();
-				FeedItem item = pageInfo.getItems().get(i);
-				
-				if (pageValues == null && pageInfo.getFaviconUrl() != null )//&& pageInfo.getFileIcon() == null)
-				{
-					pageValues = new ContentValues();
-					pageValues.put( PagesContract.COL_IMGLINK, pageInfo.getFaviconUrl());
-					pageValues.put( PagesContract.COL_DESCRIPTION, pageInfo.getDescription());
-				}
-				
-				cv.put(NewsContract.COL_TITLE, item.getTitle());
-				cv.put(NewsContract.COL_SITE, pageInfo.getUrl());
-				cv.put(NewsContract.COL_DATE, item.getLongDate());
-				cv.put(NewsContract.COL_LINK, item.getLink());
-				cv.put(NewsContract.COL_IMGLINK, item.getImageLink());
-				cv.put(NewsContract.COL_CATEGORY, item.getCategory());
-				cv.put(NewsContract.COL_AUTHOR, item.getAuthor());
-				cv.put(NewsContract.COL_DESCRIPTION, item.getDescription());
-				values[i] = cv;
-			}
+			retVal = NewsProviderUtils.storeNewsInfo(ctx, pageInfo.getItems(), pageInfo.getDescription());
 			
-			retVal = ctx.getContentResolver().bulkInsert(NewsProvider.authorityNews, values);
-			int pagesUpdated = 0;
-			if (pageValues != null)
-			{
-				Log.i(TAG, "PageUrl " + pageInfo.getUrl());
-				String fname = pageInfo.getFaviconFileName( ctx );
-				Log.i(TAG, "PageFaviconUrl " + pageInfo.getFaviconUrl() + " stripped " + fname);
-				Log.i(TAG, "PageDescription " + pageInfo.getDescription());
-				byte[] faviconBytes = getUrlAsBytes( pageInfo.getFaviconUrl() );
-				Log.i(TAG, "bytes " + faviconBytes.length);
-				FileOutputStream fos = new FileOutputStream( fname);
-				fos.write(faviconBytes);
-				fos.close();
-				String where = PagesContract.COL_LINK+ "=\'" + pageInfo.getUrl()+"\'";
-				Log.i(TAG, "where " + where);
-				pagesUpdated = ctx.getContentResolver().update( NewsProvider.authorityPages, pageValues, where, null);
-			}
+			NewsProviderUtils.updatePageInfo(ctx, pageInfo);
 			
-			Log.i(TAG, "items size : " + pageInfo.getItems().size() + " pagesUpdated " + pagesUpdated);
+			Log.i(TAG, "items size : " + pageInfo.getItems().size());
+
+			saveAndStoreFavicon(ctx, pageInfo);
+
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to fetch items" , e );
 			retVal = -1;
@@ -141,6 +94,32 @@ public class FeedFetch {
 		}
 		
 		return retVal;
+	}
+	
+	private static void saveAndStoreFavicon(Context ctx, PageInfo pageInfo)
+	{
+		String fname = pageInfo.getFaviconFileName( ctx );
+		
+		if (fname == null || PageInfo.faviconFileExists(fname))
+		{
+			return;
+		}
+
+		Log.i(TAG, "PageUrl " + pageInfo.getUrl());
+		Log.i(TAG, "PageFaviconUrl " + pageInfo.getFaviconUrl() + " stripped " + fname);
+		Log.i(TAG, "PageDescription " + pageInfo.getDescription());
+			
+		try {
+			byte[] faviconBytes = HttpDownloader.getUrlAsBytes( pageInfo.getFaviconUrl() );
+			Log.i(TAG, "bytes " + faviconBytes.length);
+			FileOutputStream fos = new FileOutputStream( fname);
+			fos.write(faviconBytes);
+			fos.close();
+
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to download favicon" , e );
+			e.printStackTrace();
+		}
 	}
 	
 	private static void parseItems(PageInfo pageInfo, XmlPullParser parser) throws XmlPullParserException, IOException
@@ -239,50 +218,4 @@ public class FeedFetch {
 			}
 		}
 	}	
-	
-	public static byte[] getUrlAsBytes(String urlString) throws IOException
-	{
-		URL url = new URL(urlString);
-		
-		Log.d(TAG, "connecting to " + url.toString());
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        
-		connection.setDoInput(true);
-        connection.setDoOutput(false);
-        connection.setRequestProperty("User-agent", "Mozilla AppleWebKit Chrome Safari"); // some feeds need this to work properly
-        connection.setConnectTimeout(30000);
-        connection.setReadTimeout(30000);
-        connection.setUseCaches(false);
-        connection.setRequestProperty("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        
-        connection.connect();
-		
-		Log.d(TAG, "connected!");
-		
-		try
-		{
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			InputStream is = connection.getInputStream();
-			Log.d(TAG, "got InputStream");
-			if (connection.getResponseCode() != HttpURLConnection.HTTP_OK)
-			{
-				return null;
-			}
-			
-			int byteRead = 0;
-			
-			byte[] buffer = new byte[1024];
-			
-			while ((byteRead = is.read(buffer)) > 0)
-			{
-				Log.d(TAG, "reading..");
-				out.write(buffer, 0, byteRead);
-			}
-			is.close();
-			out.close();
-			return out.toByteArray();
-		} finally {
-			connection.disconnect();
-		}
-	}
 }

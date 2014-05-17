@@ -6,6 +6,8 @@ import java.util.Date;
 import com.fcbm.test.multifeedreader.bom.PageInfo;
 import com.fcbm.test.multifeedreader.provider.NewsContract;
 import com.fcbm.test.multifeedreader.provider.NewsProvider;
+import com.fcbm.test.multifeedreader.utils.FeedFetch;
+import com.fcbm.test.multifeedreader.utils.GenericBackgroundThread;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -44,12 +46,11 @@ public class FeedListFragment extends ListFragment {
 	private static final int NO_OPERATION = 0;
 	private static final int LOAD_SINGLE_URL = 1;
 	private static final int LOAD_ALL_URLS = 2;
-	//private ArrayList<FeedItem> mItems;
-	//private ItemListAdapter mAdapter;
+
 	private int mNewFeeds  = 0;
 	private PageInfo mPageInfo;
 	private Handler mUpdateUiHandler;
-	private GenericDownloader<ImageView> mBmpDownloader;
+	private GenericBackgroundThread<ImageView> mBmpDownloader;
 	private ListItemClickListener mClickItemListener;
 	private AsyncQueryHandler mQueryHandler;
 	
@@ -64,21 +65,21 @@ public class FeedListFragment extends ListFragment {
 		protected Integer doInBackground(PageInfo... args) {
 			PageInfo pi = args[0] ;
 			if (pi.getUrl().startsWith("http://") || pi.getUrl().startsWith("https://"))
+			{
 				return FeedFetch.downloadFeedItems( getActivity(), pi);
+			}
 			else
+			{
 				return FeedFetch.downloadFeedItems( getActivity() );
+			}
 		}
 		
 		@Override
 		public void onPostExecute(Integer result)
 		{
-			//mItems = result;
 			mNewFeeds = result;
-			Log.i(TAG, "items.size " + result);
-			//GenericDownloader.clearOldFiles( getActivity().getApplicationContext(), mItems );
 			setupAdapter();
 		}
-		
 	};
 	
 	
@@ -101,8 +102,8 @@ public class FeedListFragment extends ListFragment {
 	
 	private final LoaderCallbacks<Cursor> mLoaderCallback = new LoaderCallbacks<Cursor>() {
 		@Override
-		public Loader<Cursor> onCreateLoader(int loaderId, Bundle args) {
-			
+		public Loader<Cursor> onCreateLoader(int loaderId, Bundle args) 
+		{
 			//String selection = loaderId == LOAD_SINGLE_URL ? NewsContract.COL_SITE + " = ?" : null;
 			//String[] selectionArgs = loaderId == LOAD_SINGLE_URL ?  new String[] { mPageInfo.getUrl()  } : null;
 			String selection = NewsContract.COL_SITE + " = '" + mPageInfo.getUrl() + "'" ;
@@ -123,16 +124,12 @@ public class FeedListFragment extends ListFragment {
 
 		@Override
 		public void onLoadFinished(Loader<Cursor> loader, Cursor c) {
-			// TODO: drop this?
-			if (mCursorAdapter != null && c != null)
-				mCursorAdapter.swapCursor(c);
+			mCursorAdapter.swapCursor(c);
 		}
 
 		@Override
 		public void onLoaderReset(Loader<Cursor> loader) {
-			// TODO: drop this?
-			if (mCursorAdapter != null)
-				mCursorAdapter.swapCursor(null);
+			mCursorAdapter.swapCursor(null);
 		}
 	};
 	
@@ -158,10 +155,10 @@ public class FeedListFragment extends ListFragment {
 			@Override
 			public void handleMessage(Message msg)
 			{
-				if (msg.what == GenericDownloader.DOWNLOADED_BITMAP)
+				if (msg.what == GenericBackgroundThread.DOWNLOADED_BITMAP)
 				{
 					Bundle data = msg.getData();
-					String fname = data.getString(GenericDownloader.DOWNLOADED_BITMAP_FNAME);
+					String fname = data.getString(GenericBackgroundThread.DOWNLOADED_BITMAP_FNAME);
 					
 					if (fname == null) return;
 					
@@ -178,7 +175,7 @@ public class FeedListFragment extends ListFragment {
 		};
 		
 		mQueryHandler = new AsyncQueryHandler(getActivity().getContentResolver()) { }; 
-		mBmpDownloader = new GenericDownloader<ImageView>(getActivity().getApplicationContext(), mUpdateUiHandler);
+		mBmpDownloader = new GenericBackgroundThread<ImageView>(getActivity().getApplicationContext(), mUpdateUiHandler);
 
 		mBmpDownloader.start();
 		mBmpDownloader.getLooper();
@@ -200,9 +197,9 @@ public class FeedListFragment extends ListFragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
 	{
 		View v = super.onCreateView(inflater, parent, savedInstanceState);
+
 		ListView lv = (ListView)v.findViewById( android.R.id.list );
 		lv.setPadding(5, 5, 5, 5);
-		
 		lv.setBackgroundColor(  Color.parseColor("#D4D4D2"));
 		lv.setDivider( new ColorDrawable(Color.TRANSPARENT) );
 		lv.setDividerHeight( 5 );
@@ -218,7 +215,6 @@ public class FeedListFragment extends ListFragment {
 	{
 		super.onListItemClick(l, v, position, id);
 		
-		//FeedItem fi = (FeedItem)l.getAdapter().getItem(position);
 		Cursor c = (Cursor)l.getAdapter().getItem(position);
 
 		Bundle b = new Bundle();
@@ -258,21 +254,15 @@ public class FeedListFragment extends ListFragment {
 	{
 		if (getActivity() == null) return;
 		
-		if (mNewFeeds > 0)
-		{
-			//mAdapter = new ItemListAdapter( mItems);
-			//setListAdapter(mAdapter);
-			//mAdapter.notifyDataSetChanged();
-	
-			mCursorAdapter.notifyDataSetChanged();
-		}
-		//else
-		{
-			//setListAdapter( null );	
-		}
+		Log.i(TAG, "Number of new items " + mNewFeeds);
+
 		if (mNewFeeds < 0)
 		{
 			Toast.makeText( getActivity(), "Failed to update feed", Toast.LENGTH_LONG).show();
+		}
+		else
+		{
+			mCursorAdapter.notifyDataSetChanged();
 		}
 	}
 		

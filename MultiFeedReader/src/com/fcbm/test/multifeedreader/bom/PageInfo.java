@@ -5,9 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fcbm.test.multifeedreader.R;
-import com.fcbm.test.multifeedreader.R.drawable;
-import com.fcbm.test.multifeedreader.provider.NewsContract;
-import com.fcbm.test.multifeedreader.provider.NewsProvider;
 import com.fcbm.test.multifeedreader.provider.PagesContract;
 
 import android.content.Context;
@@ -29,7 +26,6 @@ public class PageInfo implements Parcelable{
 	private String mFaviconUrl;
 	private Bitmap mFavicon;
 	private List<FeedItem> mItems;
-	//private static Random mGenerator = new Random();
 
 	public PageInfo(Cursor c)
 	{
@@ -55,8 +51,6 @@ public class PageInfo implements Parcelable{
 		mUrl = url;
 		mItems = new ArrayList<FeedItem>();
 		mFavicon = null;
-		//mColor = mGenerator.nextInt(256) * mGenerator.nextInt(256) * mGenerator.nextInt(256);
-		//Log.d("Color", "is " + mColor);
 	}
 	
 	private PageInfo(Parcel source)
@@ -82,7 +76,7 @@ public class PageInfo implements Parcelable{
 		return 0;
 	}
 
-	public boolean faviconFileExists(String faviconFileName)
+	static public boolean faviconFileExists(String faviconFileName)
 	{
 		return (faviconFileName != null && new File(faviconFileName).exists());
 	}

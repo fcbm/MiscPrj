@@ -1,9 +1,6 @@
 package com.fcbm.test.multifeedreader.bom;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 
 import android.graphics.Bitmap;
 import android.os.Parcel;
@@ -92,6 +89,17 @@ public class FeedItem implements Parcelable{
 
 	public void setImageLink(String imageLink) {
 		mImageLink = imageLink;
+	}
+	
+	public String getImageLinkAsFileName()
+	{
+		String aRetVal = null;
+		// TODO: cache this value
+		if (mImageLink != null)
+		{
+			aRetVal = mImageLink.replaceAll("[^a-zA-Z0-9]", "_");
+		}
+		return aRetVal;
 	}
 
 	public String getImagePath() {
