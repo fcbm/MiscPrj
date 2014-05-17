@@ -7,13 +7,12 @@ import com.fcbm.test.multifeedreader.bom.PageInfo;
 import com.fcbm.test.multifeedreader.provider.NewsProvider;
 import com.fcbm.test.multifeedreader.provider.PagesContract;
 import com.fcbm.test.multifeedreader.provider.PagesJoinNewsContract;
-
 import android.content.AsyncQueryHandler;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.drawable.BitmapDrawable;
-import android.net.Uri;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager;
@@ -28,7 +27,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -95,6 +93,11 @@ public class AddressListFragment extends ListFragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
 	{
 		View v = super.onCreateView(inflater, parent, savedInstanceState);
+		ListView lv = (ListView)v.findViewById( android.R.id.list );
+		lv.setPadding(5, 5, 5, 5);
+		lv.setBackgroundColor(  Color.parseColor("#D4D4D2"));
+		lv.setDivider( new ColorDrawable(Color.TRANSPARENT) );
+		lv.setDividerHeight( 5 );
 		Log.d(TAG, "onCreateView" );
 		return v;
 	}
@@ -185,6 +188,20 @@ public class AddressListFragment extends ListFragment {
 	
 	private class PageInfoCursorAdapter extends SimpleCursorAdapter
 	{
+		private final String[] colors = new String[] 
+				{
+			"#33B5E5",
+			"#AA66CC",
+			"#99CC00",
+			"#FFBB33",
+			"#FF4444",
+			"#0099CC",
+			"#9933CC",
+			"#669900",
+			"#FF8800",
+			"#CC0000",
+				};
+		
 		public PageInfoCursorAdapter()
 		{
 			super(getActivity(), R.layout.page_row, null, mProjection, null, 0);
@@ -195,6 +212,8 @@ public class AddressListFragment extends ListFragment {
 		{
 			if (convertView == null)
 			{
+				// Notice : we could use getSystemService here
+				// getActivity().getSystemService( Context.LAYOUT_INFLATER_SERVICE );
 				convertView = getActivity().getLayoutInflater().inflate( R.layout.page_row, null);
 			}
 			
@@ -208,15 +227,26 @@ public class AddressListFragment extends ListFragment {
 			TextView tvTitle = (TextView) convertView.findViewById( R.id.title );
 			TextView tvDescription = (TextView) convertView.findViewById( R.id.description );
 			TextView tvNumberOfItems = (TextView) convertView.findViewById( R.id.numberOfItems );
-			ImageView ivFavicon = (ImageView) convertView.findViewById( R.id.favicon );
+			TextView ivFavicon = (TextView) convertView.findViewById( R.id.favicon );
 
 			tvTitle.setText( pi.getTitle() );
 			tvDescription.setText( pi.getDescription() + " " + index );
-			tvNumberOfItems.setText( "" + size );
+			String spaces = ""; 
+			if ( size < 100 )
+			{ spaces = " "; }
+			else if ( size < 10 )
+			{ spaces = " "; }
+			tvNumberOfItems.setText( spaces + size + spaces);
 			//ivFavicon.setImageBitmap( pi.getFavicon( getActivity() ) );
 			// see http://stackoverflow.com/questions/18660672/setting-background-of-imagview-in-relativelayout
-			ivFavicon.setImageDrawable( 
-					new BitmapDrawable( getActivity().getResources(), pi.getFavicon( getActivity() ) ));
+
+			int colorIndex = position % colors.length ;
+			ivFavicon.setBackgroundColor( Color.parseColor(colors[colorIndex]) );
+		
+			ivFavicon.setText( ""+tvTitle.getText().charAt(0) );
+			
+			//ivFavicon.setImageDrawable( 
+				//	new BitmapDrawable( getActivity().getResources(), pi.getFavicon( getActivity() ) ));
 			
 			return convertView;
 		}

@@ -284,6 +284,5 @@ public class FeedFetch {
 		} finally {
 			connection.disconnect();
 		}
-		
 	}
 }
