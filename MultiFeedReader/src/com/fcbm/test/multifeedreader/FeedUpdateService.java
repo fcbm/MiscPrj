@@ -69,7 +69,7 @@ public class FeedUpdateService extends IntentService {
 			i.putExtras( b );
 			PendingIntent pendingIntent = PendingIntent.getService(  ctx, UPDATE_CODE, i, 0);
 			AlarmManager am = (AlarmManager) ctx.getSystemService( Context.ALARM_SERVICE );
-			am.setRepeating( AlarmManager.RTC, System.currentTimeMillis(), UPDATE_RATE, pendingIntent);
+			am.setInexactRepeating( AlarmManager.RTC, System.currentTimeMillis(), UPDATE_RATE, pendingIntent);
 		}
 		else
 		{

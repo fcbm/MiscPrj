@@ -25,7 +25,7 @@ public class NewsProvider extends ContentProvider {
 	private static final String TAG = "NewsProvider";
 	
 	private static final String DATABASE = "newsdatabase.db";
-	private static final int DATABASE_VER = 20;
+	private static final int DATABASE_VER = 21;
 
 	private static final BaseContract pc = new PagesContract();
 	private static final BaseContract nc = new NewsContract();

@@ -1,25 +1,28 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
-        android:id="@+id/startUpdate"
+        android:id="@+id/loadItems"
+        android:icon="@drawable/ic_action_refresh"
         android:orderInCategory="100"
         android:showAsAction="ifRoom"
+        android:title="@string/load_items"/>
+    <item
+        android:id="@+id/clearItems"
+        android:icon="@drawable/ic_action_remove"
+        android:orderInCategory="101"
+        android:showAsAction="ifRoom"
+        android:title="@string/clear_items"/>
+    
+    <item
+        android:id="@+id/startUpdate"
+        android:orderInCategory="102"
+        android:showAsAction="never"
         android:title="@string/start_update"/>
     <item
         android:id="@+id/stopUpdate"
-        android:orderInCategory="100"
-        android:showAsAction="ifRoom"
+        android:orderInCategory="103"
+        android:showAsAction="never"
         android:title="@string/stop_update"/>
     
-    <item
-        android:id="@+id/clearItems"
-        android:orderInCategory="102"
-        android:showAsAction="ifRoom"
-        android:title="@string/clear_items"/>
-    <item
-        android:id="@+id/loadItems"
-        android:orderInCategory="103"
-        android:showAsAction="ifRoom"
-        android:title="@string/load_items"/>
     
 </menu>

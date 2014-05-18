@@ -3,15 +3,10 @@ package com.fcbm.test.multifeedreader;
 import java.io.File;
 import java.util.Date;
 
-import com.fcbm.test.multifeedreader.bom.PageInfo;
-import com.fcbm.test.multifeedreader.provider.NewsContract;
-import com.fcbm.test.multifeedreader.provider.NewsProvider;
-import com.fcbm.test.multifeedreader.utils.FeedFetch;
-import com.fcbm.test.multifeedreader.utils.GenericBackgroundThread;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.AsyncQueryHandler;
+import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -37,6 +32,12 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.fcbm.test.multifeedreader.bom.PageInfo;
+import com.fcbm.test.multifeedreader.provider.NewsContract;
+import com.fcbm.test.multifeedreader.provider.NewsProvider;
+import com.fcbm.test.multifeedreader.utils.FeedFetch;
+import com.fcbm.test.multifeedreader.utils.GenericBackgroundThread;
 
 public class FeedListFragment extends ListFragment {
 	
@@ -106,7 +107,7 @@ public class FeedListFragment extends ListFragment {
 		{
 			//String selection = loaderId == LOAD_SINGLE_URL ? NewsContract.COL_SITE + " = ?" : null;
 			//String[] selectionArgs = loaderId == LOAD_SINGLE_URL ?  new String[] { mPageInfo.getUrl()  } : null;
-			String selection = NewsContract.COL_SITE + " = '" + mPageInfo.getUrl() + "'" ;
+			String selection = NewsContract.COL_SITE + "='" + mPageInfo.getUrl() + "'" ;
 			String[] selectionArgs = null; //LOAD_SINGLE_URL ?  new String[] {   } : null;
 
 			String sortOrder = NewsContract.COL_DATE + " DESC";
@@ -124,6 +125,7 @@ public class FeedListFragment extends ListFragment {
 
 		@Override
 		public void onLoadFinished(Loader<Cursor> loader, Cursor c) {
+			Log.i(TAG, "Cursor count : " + c.getCount());
 			mCursorAdapter.swapCursor(c);
 		}
 
@@ -185,8 +187,9 @@ public class FeedListFragment extends ListFragment {
 		
 		if (mPageInfo.getUrl().startsWith("http://"))
 			loaderId = LOAD_SINGLE_URL;
-		else
-			loaderId = LOAD_ALL_URLS;
+		// TODO : Allow load all news only through ActionItem
+		//else
+		//	loaderId = LOAD_ALL_URLS;
 		
 		getLoaderManager().initLoader(loaderId, loaderArgs, mLoaderCallback);
 		
@@ -273,49 +276,38 @@ public class FeedListFragment extends ListFragment {
 		}
 		
 		@Override
-		public View getView(int position, View convertView, ViewGroup parent)
+		public View newView(Context ctx, Cursor c, ViewGroup parent)
 		{
-			
-			if (convertView == null)
-			{
-				convertView = getActivity().getLayoutInflater().inflate(R.layout.item_row, null);
-			}
-			
-			Log.d(TAG, "getItem at " + position);
-			Cursor c = (Cursor) getItem(position);
-			Log.d(TAG, "gotItem at " + position);
+			LayoutInflater inflater = (LayoutInflater) ctx.getSystemService( Context.LAYOUT_INFLATER_SERVICE);
+			return inflater.inflate(R.layout.item_row, null, false);
+		}
+		
+		@Override
+		public void bindView(View view, Context ctx, Cursor c)
+		{
 			String title =  null;
 			String category = null;
 			String imageLink = null;
 			long time = 0;
+			int position = c.getPosition();
 			
-			if (c != null)
-			{
-				Log.d(TAG, "Cursor at " + position);
-				
-				title = c.getString( c.getColumnIndex( NewsContract.COL_TITLE) );
-				Log.d(TAG, "Cursor at " + position + " gotTitle");
-				category = c.getString( c.getColumnIndex( NewsContract.COL_CATEGORY) );
-				Log.d(TAG, "Cursor at " + position + " gotCategory");
-			
-				time = c.getLong( c.getColumnIndex( NewsContract.COL_DATE) );
-				
-				imageLink = c.getString( c.getColumnIndex( NewsContract.COL_IMGLINK) );
-				
-			}
-			else
-			{
-				Log.d(TAG, "Cursor at " + position + " is null!!");
-			}
+			Log.d(TAG, "Cursor at " + position);
+			Log.d(TAG, "Cursor at " + position + " gotTitle");
+			Log.d(TAG, "Cursor at " + position + " gotCategory");
+
+			title = c.getString( c.getColumnIndex( NewsContract.COL_TITLE) );
+			category = c.getString( c.getColumnIndex( NewsContract.COL_CATEGORY) );
+			time = c.getLong( c.getColumnIndex( NewsContract.COL_DATE) );
+			imageLink = c.getString( c.getColumnIndex( NewsContract.COL_IMGLINK) );
 			
 			if (title != null)
 			{
-				TextView tv = (TextView) convertView.findViewById( R.id.tvItemTitle );
+				TextView tv = (TextView) view.findViewById( R.id.tvItemTitle );
 				tv.setText(title);
 			}
 			if (category != null)
 			{ 
-				TextView tv = (TextView) convertView.findViewById( R.id.tvItemCategory );
+				TextView tv = (TextView) view.findViewById( R.id.tvItemCategory );
 				tv.setText(category);
 			}
 			if (time != 0)
@@ -326,7 +318,7 @@ public class FeedListFragment extends ListFragment {
 				int diffInHours = (int)( (d.getTime() - time) / (1000 * 60 * 60) );	
 				int diffInMins = (int)( (d.getTime() - time) / (1000 * 60) );
 					
-				TextView tv = (TextView) convertView.findViewById( R.id.tvItemDate);
+				TextView tv = (TextView) view.findViewById( R.id.tvItemDate);
 				if (diffInDays != 0)
 				{
 					tv.setText("" + diffInDays + " days ago");
@@ -344,7 +336,7 @@ public class FeedListFragment extends ListFragment {
 					tv.setText("Just Wrote!" );
 				}
 			}
-			ImageView iv = (ImageView)convertView.findViewById( R.id.ivItemImage );
+			ImageView iv = (ImageView)view.findViewById( R.id.ivItemImage );
 			iv.setImageBitmap( null );
 			
 			if ( imageLink != null )
@@ -352,8 +344,6 @@ public class FeedListFragment extends ListFragment {
 				//iv.setImageBitmap( fi.getImage() );
 				mBmpDownloader.queueDownloadBitmap( iv, imageLink);
 			}			
-
-			return convertView;
 		}
 	}
 	

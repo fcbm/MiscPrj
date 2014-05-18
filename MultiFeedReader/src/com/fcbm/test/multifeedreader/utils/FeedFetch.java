@@ -77,7 +77,7 @@ public class FeedFetch {
 			
 			parseItems(pageInfo, parser);
 			
-			retVal = NewsProviderUtils.storeNewsInfo(ctx, pageInfo.getItems(), pageInfo.getDescription());
+			retVal = NewsProviderUtils.storeNewsInfo(ctx, pageInfo.getItems(), pageInfo.getUrl());
 			
 			NewsProviderUtils.updatePageInfo(ctx, pageInfo);
 			

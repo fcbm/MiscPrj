@@ -2,11 +2,13 @@
 
     <item
         android:id="@+id/action_clear_pages"
+        android:icon="@drawable/ic_action_remove"
         android:orderInCategory="100"
         android:showAsAction="never"
         android:title="@string/clear_pages"/>
     <item
         android:id="@+id/action_load_pages"
+        android:icon="@drawable/ic_action_refresh"
         android:orderInCategory="101"
         android:showAsAction="never"
         android:title="@string/load_pages"/>
