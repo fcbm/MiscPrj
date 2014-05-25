@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="5dp"
     android:background="@drawable/item_rounded_corners"
@@ -9,8 +9,9 @@
     >
 
     <LinearLayout
+        android:padding="5dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="horizontal" >
 
         <TextView
@@ -22,7 +23,6 @@
             android:text="Sample TEXT"
             android:textSize="14dp"
             android:textStyle="bold" />
-
         <ImageView
             android:id="@+id/ivItemImage"
             android:layout_width="90dp"
@@ -30,6 +30,7 @@
             android:layout_gravity="right"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_launcher" />
+
     </LinearLayout>
 
     <LinearLayout
@@ -42,6 +43,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="left"
+            android:layout_gravity="bottom"
             android:textColor="#8C8C8C"
             android:text="Sample CATEGORY" />
 
@@ -50,8 +52,16 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_gravity="bottom"
             android:gravity="right"
             android:text="Sample DATE" />
+        <CheckBox 
+            android:id="@+id/cbFavourite"
+            android:layout_gravity="bottom|right"
+            android:focusable="false"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="?android:attr/starStyle" />
     </LinearLayout>
 
 </LinearLayout>

@@ -89,11 +89,12 @@ public class AddressListFragment extends ListFragment {
 		View v = super.onCreateView(inflater, parent, savedInstanceState);
 		
 		ListView lv = (ListView)v.findViewById( android.R.id.list );
-		lv.setPadding(5, 5, 5, 5);
+		lv.setPadding(15, 15, 15, 15);
+		
 		// TODO : define resource
 		lv.setBackgroundColor(  Color.parseColor("#D4D4D2"));
 		lv.setDivider( new ColorDrawable(Color.TRANSPARENT) );
-		lv.setDividerHeight( 5 );
+		lv.setDividerHeight( 10 );
 		
 		return v;
 	}
@@ -269,9 +270,7 @@ public class AddressListFragment extends ListFragment {
 	private void clearPages()
 	{
 		Object cookie = null;
-		//mPages.clear();
 		//getActivity().getContentResolver().delete( NewsProvider.authorityPages, null, null);
-		// TODO: adapter will not be refreshed because we're using a different uri
 		mQueryHandler.startDelete(NO_OPERATION, cookie, NewsProvider.authorityPagesAndCountedNews, null, null);
 	}
 	

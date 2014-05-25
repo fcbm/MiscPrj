@@ -12,5 +12,6 @@
     <string name="load_pages">Load Pages</string>
     <string name="clear_pages">Clear Pages</string>
     <string name="reset_pages">Reset Pages</string>
+    <string name="search">Search</string>
 
 </resources>

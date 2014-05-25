@@ -247,7 +247,8 @@ public class NewsProvider extends ContentProvider {
 			Log.i(TAG, "Insert " + newRowId);
 			newUrl = ContentUris.withAppendedId(uri, newRowId);
 			// TODO: check newUrl vs uri
-			getContext().getContentResolver().notifyChange(uri, null);
+			//getContext().getContentResolver().notifyChange(uri, null);
+			getContext().getContentResolver().notifyChange(newUrl, null);
 		}
 		
 		return newUrl;

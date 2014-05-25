@@ -6,6 +6,7 @@ import java.util.Date;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.AsyncQueryHandler;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -17,6 +18,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.ListFragment;
+import android.support.v4.app.LoaderManager;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -28,6 +30,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -47,6 +52,8 @@ public class FeedListFragment extends ListFragment {
 	private static final int NO_OPERATION = 0;
 	private static final int LOAD_SINGLE_URL = 1;
 	private static final int LOAD_ALL_URLS = 2;
+	private static final int LOAD_STARRED_URLS = 3;
+	private static final int LOAD_UNREAD_URLS = 4;
 
 	private int mNewFeeds  = 0;
 	private PageInfo mPageInfo;
@@ -99,16 +106,29 @@ public class FeedListFragment extends ListFragment {
 			NewsContract.COL_DATE,
 			NewsContract.COL_LINK,
 			NewsContract.COL_DESCRIPTION,
+			NewsContract.COL_UNREAD,
+			NewsContract.COL_STARRED,
 			NewsContract.COL_IMGLINK};
 	
 	private final LoaderCallbacks<Cursor> mLoaderCallback = new LoaderCallbacks<Cursor>() {
 		@Override
 		public Loader<Cursor> onCreateLoader(int loaderId, Bundle args) 
 		{
-			//String selection = loaderId == LOAD_SINGLE_URL ? NewsContract.COL_SITE + " = ?" : null;
-			//String[] selectionArgs = loaderId == LOAD_SINGLE_URL ?  new String[] { mPageInfo.getUrl()  } : null;
-			String selection = NewsContract.COL_SITE + "='" + mPageInfo.getUrl() + "'" ;
-			String[] selectionArgs = null; //LOAD_SINGLE_URL ?  new String[] {   } : null;
+			String selection = null;
+			if (loaderId == LOAD_SINGLE_URL)
+			{
+				selection = NewsContract.COL_SITE + "='" + mPageInfo.getUrl() + "'" ;
+			}
+			else if (loaderId == LOAD_STARRED_URLS)
+			{
+				selection = NewsContract.COL_STARRED + ">0";
+			}
+			else if (loaderId == LOAD_UNREAD_URLS)
+			{
+				selection = NewsContract.COL_UNREAD + " is null";
+			}
+			
+			String[] selectionArgs = null;
 
 			String sortOrder = NewsContract.COL_DATE + " DESC";
 			
@@ -151,7 +171,8 @@ public class FeedListFragment extends ListFragment {
 		setHasOptionsMenu(true);
 
 		mPageInfo = getArguments().getParcelable( FeedListActivity.KEY_PAGE_INFO );
-		
+		mQueryHandler = new AsyncQueryHandler(getActivity().getContentResolver()) { };
+
 		mUpdateUiHandler = new Handler()
 		{
 			@Override
@@ -176,36 +197,65 @@ public class FeedListFragment extends ListFragment {
 			
 		};
 		
-		mQueryHandler = new AsyncQueryHandler(getActivity().getContentResolver()) { }; 
+		 
 		mBmpDownloader = new GenericBackgroundThread<ImageView>(getActivity().getApplicationContext(), mUpdateUiHandler);
 
 		mBmpDownloader.start();
 		mBmpDownloader.getLooper();
+				
+		//new FeedDownloader().execute(mPageInfo);
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
 		
 		int loaderId = 0;
 		Bundle loaderArgs = null;
-		
 		if (mPageInfo.getUrl().startsWith("http://"))
+		{
 			loaderId = LOAD_SINGLE_URL;
+		}
+		else if (mPageInfo.getUrl().equals("Starred"))
+		{
+			loaderId = LOAD_STARRED_URLS;
+		}
+		else if (mPageInfo.getUrl().equals("Unread"))
+		{
+			loaderId = LOAD_UNREAD_URLS;			
+		}
+		else if (mPageInfo.getUrl().equals("AllFeeds"))
+		{
+			loaderId = LOAD_ALL_URLS;
+		}
 		// TODO : Allow load all news only through ActionItem
-		//else
-		//	loaderId = LOAD_ALL_URLS;
+
+		// Call initLoader here instead of onActivityCreated, see:
+		// http://stackoverflow.com/questions/15515799/should-we-really-call-getloadermanager-initloader-in-onactivitycreated-which
+		// I did this to have "unread" fresh update
+		LoaderManager lm = getLoaderManager();
 		
-		getLoaderManager().initLoader(loaderId, loaderArgs, mLoaderCallback);
-		
-		new FeedDownloader().execute(mPageInfo);
+		if (lm.getLoader( loaderId ) != null)
+		{
+			lm.restartLoader( loaderId, loaderArgs, mLoaderCallback);
+		}
+		else
+		{
+			lm.initLoader( loaderId, loaderArgs, mLoaderCallback);
+		}
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState)
 	{
 		View v = super.onCreateView(inflater, parent, savedInstanceState);
-
+		v.setBackgroundColor(  Color.parseColor("#D4D4D2"));
 		ListView lv = (ListView)v.findViewById( android.R.id.list );
-		lv.setPadding(5, 5, 5, 5);
+		lv.setPadding(15, 15, 15, 15);
 		lv.setBackgroundColor(  Color.parseColor("#D4D4D2"));
 		lv.setDivider( new ColorDrawable(Color.TRANSPARENT) );
-		lv.setDividerHeight( 5 );
+		lv.setDividerHeight( 10 );
 		
 		mCursorAdapter = new ItemCursorAdapter();
 		setListAdapter(mCursorAdapter);
@@ -217,11 +267,12 @@ public class FeedListFragment extends ListFragment {
 	public void onListItemClick(ListView l, View v, int position, long id)
 	{
 		super.onListItemClick(l, v, position, id);
-		
+
 		Cursor c = (Cursor)l.getAdapter().getItem(position);
 
 		Bundle b = new Bundle();
 		String link = c.getString( c.getColumnIndex( NewsContract.COL_LINK ));
+		int unread = c.getInt( c.getColumnIndex( NewsContract.COL_UNREAD ));
 		String description = c.getString( c.getColumnIndex( NewsContract.COL_DESCRIPTION ));
 		if (link != null)
 		{
@@ -233,6 +284,12 @@ public class FeedListFragment extends ListFragment {
 		}
 		if (!b.isEmpty() && mClickItemListener != null)
 		{
+			Object cookie = null;
+			String selection = NewsContract.COL_LINK + "=\'" + link + "\'";
+			String[] selectionArgs = null;
+			ContentValues values = new ContentValues();
+			values.put( NewsContract.COL_UNREAD, (unread+1));
+			mQueryHandler.startUpdate(NO_OPERATION, cookie, NewsProvider.authorityNews, values, selection, selectionArgs);
 			mClickItemListener.onListItemClicked(b);
 		}
 
@@ -269,7 +326,7 @@ public class FeedListFragment extends ListFragment {
 		}
 	}
 		
-	private class ItemCursorAdapter extends SimpleCursorAdapter
+	private class ItemCursorAdapter extends SimpleCursorAdapter implements OnCheckedChangeListener
 	{
 		public ItemCursorAdapter() {
 			super(getActivity(), R.layout.item_row, null, mProjection, null, 0);
@@ -279,31 +336,47 @@ public class FeedListFragment extends ListFragment {
 		public View newView(Context ctx, Cursor c, ViewGroup parent)
 		{
 			LayoutInflater inflater = (LayoutInflater) ctx.getSystemService( Context.LAYOUT_INFLATER_SERVICE);
-			return inflater.inflate(R.layout.item_row, null, false);
+			View v = inflater.inflate(R.layout.item_row, null, false);
+			return v;
 		}
 		
 		@Override
 		public void bindView(View view, Context ctx, Cursor c)
 		{
 			String title =  null;
+			String link =  null;
 			String category = null;
 			String imageLink = null;
 			long time = 0;
+
+			int unreadInt = 0;
+			int starredInt = 0; 
 			int position = c.getPosition();
 			
 			Log.d(TAG, "Cursor at " + position);
 			Log.d(TAG, "Cursor at " + position + " gotTitle");
 			Log.d(TAG, "Cursor at " + position + " gotCategory");
 
+			starredInt = c.getInt( c.getColumnIndex( NewsContract.COL_STARRED) );
+			unreadInt = c.getInt( c.getColumnIndex( NewsContract.COL_UNREAD) );
 			title = c.getString( c.getColumnIndex( NewsContract.COL_TITLE) );
 			category = c.getString( c.getColumnIndex( NewsContract.COL_CATEGORY) );
 			time = c.getLong( c.getColumnIndex( NewsContract.COL_DATE) );
 			imageLink = c.getString( c.getColumnIndex( NewsContract.COL_IMGLINK) );
+			link = c.getString( c.getColumnIndex( NewsContract.COL_LINK) );
+
+			CheckBox cb = (CheckBox) view.findViewById( R.id.cbFavourite );
+			cb.setTag(link);
+			cb.setOnCheckedChangeListener(null);
+			cb.setChecked( (starredInt > 0 ? true : false));
+			cb.setOnCheckedChangeListener( this );
 			
 			if (title != null)
 			{
 				TextView tv = (TextView) view.findViewById( R.id.tvItemTitle );
 				tv.setText(title);
+				int col = ((unreadInt > 0) ? Color.GRAY : Color.BLACK);
+				tv.setTextColor( col );
 			}
 			if (category != null)
 			{ 
@@ -344,6 +417,19 @@ public class FeedListFragment extends ListFragment {
 				//iv.setImageBitmap( fi.getImage() );
 				mBmpDownloader.queueDownloadBitmap( iv, imageLink);
 			}			
+		}
+
+		@Override
+		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+			
+			
+			String tagLink = (String)buttonView.getTag();
+			Log.d("unread", "changed " + tagLink);
+			String selection = NewsContract.COL_LINK + "=\'" + tagLink + "\'";
+			ContentValues values = new ContentValues(1);
+			int stInt = buttonView.isChecked() ? 1 : 0;
+			values.put( NewsContract.COL_STARRED, stInt);
+			mQueryHandler.startUpdate(NO_OPERATION, null, NewsProvider.authorityNews, values, selection, null);		
 		}
 	}
 	

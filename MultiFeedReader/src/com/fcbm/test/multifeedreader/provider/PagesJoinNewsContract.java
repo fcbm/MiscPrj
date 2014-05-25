@@ -37,7 +37,7 @@ public class PagesJoinNewsContract extends BaseContract {
 	private static final String CNT_LINKS = "COUNT( " + nc.addPrefix( NewsContract.COL_LINK) + ")";
 	private static final String SELECT_CNT_ALL_NEWS_LINKS = "SELECT " + CNT_LINKS + " from " + NewsContract.TABLE;
 	private static final String SELECT_CNT_STARRED_NEWS_LINKS = SELECT_CNT_ALL_NEWS_LINKS + " WHERE " + nc.addPrefix(NewsContract.COL_STARRED) + "=1";
-	private static final String SELECT_CNT_UNREAD_NEWS_LINKS = SELECT_CNT_ALL_NEWS_LINKS + " WHERE " + nc.addPrefix(NewsContract.COL_UNREAD) + "=1";
+	private static final String SELECT_CNT_UNREAD_NEWS_LINKS = SELECT_CNT_ALL_NEWS_LINKS + " WHERE " + nc.addPrefix(NewsContract.COL_UNREAD) + " is null";
 	
 	public static final String COL_COUNT_CNT = "cnt";
 	private static final String COL_COUNT_NEWS_AS_CNT = 
