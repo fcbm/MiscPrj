@@ -3,9 +3,12 @@ package com.example.searchapp;
 import android.app.Activity;
 import android.app.SearchManager;
 import android.app.SearchableInfo;
+import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
@@ -14,6 +17,7 @@ import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.widget.SearchView;
+import android.support.v7.widget.SearchView.OnQueryTextListener;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -26,6 +30,8 @@ import android.widget.TextView;
 
 
 public class MainFragment extends Fragment {
+	
+	public static final String KEY_QUERY = "KEY_QUERY";
 	
 	private static final String TAG = "MainFragment";
 	private static final int KEY_LOAD_MOVIES = 1;
@@ -43,6 +49,14 @@ public class MainFragment extends Fragment {
 			String selection = null;
 			String[] selectionArgs = null;
 			String sortOrder = null;
+			final String NO_QUERY = "";
+			
+			String query = PreferenceManager.getDefaultSharedPreferences( getActivity() ).getString( KEY_QUERY, NO_QUERY);
+			
+			if ( query != null && query.length() > 0)
+			{
+				selection = new String(TheProvider.COL_TITLE + " LIKE \"%" + query + "%\"");
+			}
 			
 			return new CursorLoader(getActivity(), 
 					TheProvider.AUTHORITY, 
@@ -65,7 +79,20 @@ public class MainFragment extends Fragment {
 		}
 	};
 	
-	public MainFragment() {
+	public void refreshItems()
+	{
+		Bundle loaderArgs = null;
+		getLoaderManager().restartLoader( KEY_LOAD_MOVIES, loaderArgs, mLoaderCallbacks);;
+	}
+	
+	public static MainFragment newInstance(Bundle b)
+	{
+		MainFragment mf = new MainFragment();
+		mf.setArguments(b);
+		return mf;
+	}
+	
+	private MainFragment() {
 	}
 
 	@Override
@@ -106,33 +133,66 @@ public class MainFragment extends Fragment {
 		else
 		{
 			Log.d(TAG, "onResume restartLoader");
-			lm.restartLoader( KEY_LOAD_MOVIES, loaderArgs, mLoaderCallbacks);
+			//lm.restartLoader( KEY_LOAD_MOVIES, loaderArgs, mLoaderCallbacks);
+			refreshItems();
 		}
 	}
 	
 
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		Log.d(TAG, "onCreateOptionsMenu");
+		
 		inflater.inflate(R.menu.main, menu);
 		
+		// Get ComponentName from Activity
 		Activity a = getActivity();
-		if (a == null)
-		{
-			Log.d(TAG, "onCreateOptionsMenu a is null");
-			return;
-		}
-		Log.d(TAG, "onCreateOptionsMenu create SV");
+		ComponentName cn = a.getComponentName();
+		
+		// Get ServiceManager from context (Activity)
 		SearchManager sm = (SearchManager) a.getSystemService( Context.SEARCH_SERVICE );
-		Log.d(TAG, "onCreateOptionsMenu create SV1");
-		if (a.getComponentName() == null)
-		{
-			Log.d(TAG, "onCreateOptionsMenu create cn null");
-		}
-		SearchableInfo si = sm.getSearchableInfo( a.getComponentName() );
-		Log.d(TAG, "onCreateOptionsMenu create SV2");
+		
+		// Get SearchableInfo for the given ComponentName
+		// SearchableInfo contains info from searchable.xml
+		SearchableInfo si = sm.getSearchableInfo( cn );
+		
+		// Get ManuItem from Menu (needed to get the SearchView)
 		MenuItem mi = (MenuItem) menu.findItem( R.id.action_search_view );
-		SearchView sw = (SearchView)MenuItemCompat.getActionView(mi);
+		
+		// Get SearchView from MenuItem (for compatibility from MenuItemCompat)
+		SearchView sw = (SearchView) MenuItemCompat.getActionView(mi);
+		
+		// Let the SearchView know about the SearchableInfo 
 		sw.setSearchableInfo( si );
+		
+		sw.setOnQueryTextListener( new OnQueryTextListener() {
+			
+			@Override
+			public boolean onQueryTextSubmit(String query) {
+				Log.d(TAG+"FC", "onQueryTextSubmit " + query);
+				return handleEmptyQuery(query);
+			}
+			
+			@Override
+			public boolean onQueryTextChange(String query) {
+				Log.d(TAG+"FC", "onQueryTextChange " + query);
+				return handleEmptyQuery(query);
+			}
+			
+			private boolean handleEmptyQuery(String query)
+			{
+				if (query == null || query.length() == 0)
+				{
+					PreferenceManager.getDefaultSharedPreferences( getActivity() )
+						.edit()
+						.putString(KEY_QUERY, null)
+						.commit();
+					refreshItems();
+					return true;
+				}
+				return false;
+			}
+		});
 	}
 
 	@Override
@@ -151,7 +211,43 @@ public class MainFragment extends Fragment {
 		}
 		else if (id == R.id.action_search_view)
 		{
-			Log.d(TAG, "Search View");
+			Log.d(TAG+"FC", "Search View");
+		}
+		else if (id == R.id.action_populate)
+		{
+			Log.d(TAG, "PopulateDB");
+			ContentValues[] cvList = new ContentValues[5];
+			cvList[0] = new ContentValues();
+			cvList[0].put(TheProvider.COL_TITLE, "Title A");
+			cvList[0].put(TheProvider.COL_DIRECTOR, "Director A");
+
+			cvList[1] = new ContentValues();
+			cvList[1].put(TheProvider.COL_TITLE, "Super Title");
+			cvList[1].put(TheProvider.COL_DIRECTOR, "Super Director");
+
+			cvList[2] = new ContentValues();
+			cvList[2].put(TheProvider.COL_TITLE, "Mega Title");
+			cvList[2].put(TheProvider.COL_DIRECTOR, "Mega Director");
+
+			cvList[3] = new ContentValues();
+			cvList[3].put(TheProvider.COL_TITLE, "SuperMega Title");
+			cvList[3].put(TheProvider.COL_DIRECTOR, "SuperMega Director");
+
+			cvList[4] = new ContentValues();
+			cvList[4].put(TheProvider.COL_TITLE, "Arci Title");
+			cvList[4].put(TheProvider.COL_DIRECTOR, "Arci Director");
+
+			getActivity().getContentResolver().bulkInsert(TheProvider.AUTHORITY, cvList);
+			// TODO : check, is it correct?
+			sca.notifyDataSetChanged();
+		}
+		else if (id == R.id.action_clear)
+		{
+			Log.d(TAG, "ClearDb");
+			// TODO: search when it's safe to call getActivity
+			// within a Fragment
+			getActivity().getContentResolver().delete(TheProvider.AUTHORITY, null, null);
+			sca.notifyDataSetChanged();
 		}
 		
 		return super.onOptionsItemSelected(item);
@@ -169,7 +265,7 @@ public class MainFragment extends Fragment {
 		{
 			Log.d(TAG, "newView");
 			LayoutInflater li = (LayoutInflater) ctx.getSystemService( Context.LAYOUT_INFLATER_SERVICE);
-			View v = li.inflate( R.layout.row_movie, null, false);
+			View v = li.inflate( R.layout.row_movie, parent, false);
 			return v;
 		}
 		

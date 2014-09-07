@@ -2,4 +2,14 @@
 <searchable xmlns:android="http://schemas.android.com/apk/res/android"
     android:label="@string/search_label" 
     android:hint="@string/search_hint"
+    android:searchSuggestAuthority="com.example.searchapp"
+    android:searchSuggestIntentAction="android.intent.action.VIEW"
     />
+
+    <!-- 
+    TODO : 
+    check 
+    android:searchSuggestSelection="word match ?"
+    and 
+    android:searchSuggestIntentData="content://com.example/datatable"
+     -->

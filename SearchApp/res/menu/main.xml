@@ -19,6 +19,20 @@
         android:id="@+id/action_search_view"
         android:orderInCategory="102"
         android:title="@string/action_search_view"
-        app:showAsAction="always"/>    
+        app:showAsAction="always"
+        app:actionViewClass="android.support.v7.widget.SearchView"
+        />    
+
+    <item
+        android:id="@+id/action_populate"
+        android:orderInCategory="103"
+        android:title="@string/action_populate"
+        app:showAsAction="never"/>
+    
+    <item
+        android:id="@+id/action_clear"
+        android:orderInCategory="103"
+        android:title="@string/action_clar"
+        app:showAsAction="never"/>
     
 </menu>

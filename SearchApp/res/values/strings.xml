@@ -8,5 +8,9 @@
     <string name="search_label">Search Label!</string>
     <string name="action_search_btn">Action Search!</string>
     <string name="action_search_view">Action Search View!</string>
+    <string name="title">Title</string>
+    <string name="director">Director</string>
+    <string name="action_clar">Clear</string>
+    <string name="action_populate">Populate</string>
 
 </resources>
